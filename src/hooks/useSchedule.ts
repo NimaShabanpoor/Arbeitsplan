@@ -1,10 +1,11 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Employee, ScheduleMap } from '../types';
+import { Employee, ScheduleMap, WeekTemplate } from '../types';
 import { defaultEmployees } from '../data/employees';
 import { buildInitialSchedule, makeKey } from '../data/scheduleData';
 
 const STORAGE_KEY_SCHEDULE = 'benedict_schedule';
 const STORAGE_KEY_EMPLOYEES = 'benedict_employees';
+const STORAGE_KEY_TEMPLATES = 'benedict_templates';
 
 function loadFromStorage<T>(key: string, fallback: T): T {
   try {
@@ -39,7 +40,7 @@ export function useSchedule() {
     return now.getFullYear();
   });
 
-  const saveScheduleTimer = useRef<ReturnType<typeof setTimeout>>();
+  const saveScheduleTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => {
     clearTimeout(saveScheduleTimer.current);
     saveScheduleTimer.current = setTimeout(() => {
@@ -100,11 +101,68 @@ export function useSchedule() {
     setSelectedYear(year);
   }, []);
 
+  const [templates, setTemplates] = useState<WeekTemplate[]>(() =>
+    loadFromStorage(STORAGE_KEY_TEMPLATES, [])
+  );
+
+  useEffect(() => {
+    saveToStorage(STORAGE_KEY_TEMPLATES, templates);
+  }, [templates]);
+
+  const saveTemplate = useCallback((tpl: WeekTemplate) => {
+    setTemplates(prev => {
+      const idx = prev.findIndex(t => t.id === tpl.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = tpl;
+        return next;
+      }
+      return [...prev, tpl];
+    });
+  }, []);
+
+  const deleteTemplate = useCallback((id: string) => {
+    setTemplates(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  const applyTemplate = useCallback((
+    tpl: WeekTemplate,
+    employeeNrs: number[],
+    startDate: string,
+    endDate: string,
+  ) => {
+    setSchedule(prev => {
+      const next = { ...prev };
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        let dow = d.getDay();
+        dow = dow === 0 ? 6 : dow - 1;
+
+        const dutyNr = tpl.days[dow];
+        const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+        for (const empNr of employeeNrs) {
+          const key = makeKey(empNr, dateKey);
+          if (dutyNr === null) {
+            delete next[key];
+          } else {
+            next[key] = dutyNr;
+          }
+        }
+      }
+      return next;
+    });
+  }, []);
+
   const resetData = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY_SCHEDULE);
     localStorage.removeItem(STORAGE_KEY_EMPLOYEES);
+    localStorage.removeItem(STORAGE_KEY_TEMPLATES);
     setSchedule(buildInitialSchedule());
     setEmployees(defaultEmployees);
+    setTemplates([]);
   }, []);
 
   return {
@@ -112,6 +170,7 @@ export function useSchedule() {
     schedule,
     selectedMonth,
     selectedYear,
+    templates,
     setDuty,
     updateEmployee,
     addEmployee,
@@ -119,5 +178,8 @@ export function useSchedule() {
     navigateMonth,
     goToMonth,
     resetData,
+    saveTemplate,
+    deleteTemplate,
+    applyTemplate,
   };
 }

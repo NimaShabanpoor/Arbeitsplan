@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, RotateCcw, Users, CalendarDays } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RotateCcw, Users, CalendarDays, Copy, Download } from 'lucide-react';
 
 const MONTHS = [
   'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
@@ -12,7 +12,10 @@ interface HeaderProps {
   onGoToMonth: (month: number, year: number) => void;
   onReset: () => void;
   onToggleEmployees: () => void;
+  onToggleTemplates: () => void;
+  onToggleExport: () => void;
   showEmployeePanel: boolean;
+  showTemplatePanel: boolean;
 }
 
 export function Header({
@@ -22,7 +25,10 @@ export function Header({
   onGoToMonth,
   onReset,
   onToggleEmployees,
+  onToggleTemplates,
+  onToggleExport,
   showEmployeePanel,
+  showTemplatePanel,
 }: HeaderProps) {
   return (
     <header className="bg-gradient-to-r from-slate-800 to-slate-900 text-white shadow-lg">
@@ -74,7 +80,7 @@ export function Header({
             <ChevronRight className="w-5 h-5" />
           </button>
 
-          <div className="w-px h-8 bg-slate-600 mx-2" />
+          <div className="w-px h-8 bg-slate-600 mx-1" />
 
           <button
             onClick={() => {
@@ -84,6 +90,24 @@ export function Header({
             className="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors font-medium"
           >
             Heute
+          </button>
+
+          <div className="w-px h-8 bg-slate-600 mx-1" />
+
+          <button
+            onClick={onToggleTemplates}
+            className={`p-2 rounded-lg transition-colors ${showTemplatePanel ? 'bg-purple-600' : 'hover:bg-slate-700'}`}
+            title="Wochenvorlagen"
+          >
+            <Copy className="w-5 h-5" />
+          </button>
+
+          <button
+            onClick={onToggleExport}
+            className="p-2 rounded-lg hover:bg-slate-700 transition-colors"
+            title="Als Excel exportieren"
+          >
+            <Download className="w-5 h-5" />
           </button>
 
           <button

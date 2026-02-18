@@ -31,6 +31,12 @@ export interface HolidayPeriod {
   endDate: string;
 }
 
+export interface WeekTemplate {
+  id: string;
+  name: string;
+  days: (number | null)[];
+}
+
 export interface AppState {
   employees: Employee[];
   schedule: ScheduleMap;

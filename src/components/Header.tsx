@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, RotateCcw, Users, CalendarDays, Copy, Download, LogOut } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RotateCcw, Users, CalendarDays, Copy, Download, LogOut, Search, X } from 'lucide-react';
 import { AuthUser } from '../types';
 
 const MONTHS = [
@@ -11,11 +11,14 @@ interface HeaderProps {
   selectedYear: number;
   onNavigate: (dir: number) => void;
   onGoToMonth: (month: number, year: number) => void;
+  onGoToToday: () => void;
   onReset: () => void;
   onToggleEmployees: () => void;
   onToggleTemplates: () => void;
   onToggleExport: () => void;
   onLogout: () => void;
+  employeeSearch: string;
+  onEmployeeSearchChange: (value: string) => void;
   showEmployeePanel: boolean;
   showTemplatePanel: boolean;
   currentUser: AuthUser;
@@ -27,11 +30,14 @@ export function Header({
   selectedYear,
   onNavigate,
   onGoToMonth,
+  onGoToToday,
   onReset,
   onToggleEmployees,
   onToggleTemplates,
   onToggleExport,
   onLogout,
+  employeeSearch,
+  onEmployeeSearchChange,
   showEmployeePanel,
   showTemplatePanel,
   currentUser,
@@ -39,16 +45,17 @@ export function Header({
 }: HeaderProps) {
   return (
     <header className="bg-gradient-to-r from-slate-800 to-slate-900 text-white shadow-lg">
-      <div className="px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <CalendarDays className="w-7 h-7 text-blue-400" />
+      <div className="px-3 py-3 md:px-4 md:py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div className="flex items-center gap-2.5 md:gap-3">
+          <CalendarDays className="w-6 h-6 md:w-7 md:h-7 text-blue-400 shrink-0" />
           <div>
-            <h1 className="text-lg font-bold tracking-wide">Dienstkalender IT Bénédict Zürich</h1>
-            <p className="text-xs text-slate-400">Dienstplan der Praktikanten von Werner Hutter</p>
+            <h1 className="text-sm md:text-lg font-bold tracking-wide">Dienstkalender IT Bénédict Zürich</h1>
+            <p className="hidden sm:block text-xs text-slate-400">Dienstplan der Praktikanten von Werner Hutter</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="w-full md:w-auto overflow-x-auto hide-scrollbar">
+          <div className="flex items-center gap-2 min-w-max">
           <button
             onClick={() => onNavigate(-1)}
             className="p-2 rounded-lg hover:bg-slate-700 transition-colors"
@@ -90,10 +97,7 @@ export function Header({
           <div className="w-px h-8 bg-slate-600 mx-1" />
 
           <button
-            onClick={() => {
-              const now = new Date();
-              onGoToMonth(now.getMonth(), now.getFullYear());
-            }}
+            onClick={onGoToToday}
             className="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors font-medium"
           >
             Heute
@@ -158,12 +162,33 @@ export function Header({
           >
             <LogOut className="w-5 h-5" />
           </button>
+          </div>
         </div>
       </div>
 
       <div className="px-4 pb-2">
-        <div className="text-sm font-semibold text-blue-300">
-          {MONTHS[selectedMonth]} {selectedYear}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="text-sm font-semibold text-blue-300">
+            {MONTHS[selectedMonth]} {selectedYear}
+          </div>
+          <div className="relative w-full sm:w-72">
+            <Search className="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input
+              value={employeeSearch}
+              onChange={e => onEmployeeSearchChange(e.target.value)}
+              placeholder="Mitarbeiter suchen..."
+              className="w-full h-8 rounded-lg bg-slate-700/80 border border-slate-600 pl-8 pr-8 text-xs text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {employeeSearch && (
+              <button
+                onClick={() => onEmployeeSearchChange('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-white"
+                title="Suche leeren"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </header>

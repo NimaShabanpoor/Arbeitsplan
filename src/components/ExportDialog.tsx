@@ -39,7 +39,7 @@ export function ExportDialog({ employees, schedule, selectedMonth, selectedYear,
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-[420px] overflow-hidden">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-[calc(100%-1.5rem)] max-w-[420px] overflow-hidden">
         <div className="bg-slate-800 text-white px-4 py-3 flex items-center justify-between">
           <h2 className="font-bold flex items-center gap-2">
             <FileSpreadsheet className="w-5 h-5" />

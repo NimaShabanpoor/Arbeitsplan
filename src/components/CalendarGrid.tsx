@@ -24,6 +24,9 @@ interface CalendarGridProps {
   selectedYear: number;
   onSetDuty: (employeeNr: number, date: string, dutyNr: number | null) => void;
   canEdit: boolean;
+  scrollToDate: string | null;
+  scrollToDateVersion: number;
+  employeeSearchTerm: string;
 }
 
 function formatDate(day: number, month: number, year: number): string {
@@ -78,9 +81,20 @@ const DutyCell = memo(function DutyCell({
   );
 });
 
-export function CalendarGrid({ employees, schedule, selectedMonth, selectedYear, onSetDuty, canEdit }: CalendarGridProps) {
+export function CalendarGrid({
+  employees,
+  schedule,
+  selectedMonth,
+  selectedYear,
+  onSetDuty,
+  canEdit,
+  scrollToDate,
+  scrollToDateVersion,
+  employeeSearchTerm,
+}: CalendarGridProps) {
   const [selector, setSelector] = useState<SelectorState | null>(null);
   const [collapsed, setCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   const leftRef = useRef<HTMLDivElement>(null);
   const rightRef = useRef<HTMLDivElement>(null);
@@ -90,6 +104,22 @@ export function CalendarGrid({ employees, schedule, selectedMonth, selectedYear,
   useEffect(() => {
     setSelector(null);
   }, [selectedMonth, selectedYear]);
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 768px)');
+    const applyViewport = (mobile: boolean) => {
+      setIsMobile(mobile);
+      if (mobile) {
+        setCollapsed(true);
+      }
+    };
+
+    applyViewport(media.matches);
+
+    const onChange = (event: MediaQueryListEvent) => applyViewport(event.matches);
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, []);
 
   const syncScroll = useCallback((source: 'left' | 'right') => {
     if (syncing.current) return;
@@ -125,10 +155,24 @@ export function CalendarGrid({ employees, schedule, selectedMonth, selectedYear,
     return result;
   }, [selectedMonth, selectedYear]);
 
-  const activeEmployees = useMemo(
-    () => employees.filter(e => e.aktiv),
-    [employees]
-  );
+  useEffect(() => {
+    if (!scrollToDate) return;
+    const dayIndex = days.findIndex(day => day.dateStr === scrollToDate);
+    if (dayIndex < 0) return;
+    const nextScrollLeft = dayIndex * 40;
+    if (headerRef.current) headerRef.current.scrollLeft = nextScrollLeft;
+    if (rightRef.current) rightRef.current.scrollLeft = nextScrollLeft;
+  }, [days, scrollToDate, scrollToDateVersion]);
+
+  const activeEmployees = useMemo(() => {
+    const term = employeeSearchTerm.trim().toLowerCase();
+    return employees.filter(e => {
+      if (!e.aktiv) return false;
+      if (!term) return true;
+      const searchText = `${e.nr} ${e.name} ${e.vorname} ${e.funktion} ${e.standort}`.toLowerCase();
+      return searchText.includes(term);
+    });
+  }, [employees, employeeSearchTerm]);
 
   const handleCellClick = useCallback((
     e: React.MouseEvent,
@@ -159,13 +203,14 @@ export function CalendarGrid({ employees, schedule, selectedMonth, selectedYear,
   const closeSelector = useCallback(() => setSelector(null), []);
 
   const HEADER_HEIGHT = 36;
+  const LEFT_PANEL_WIDTH = collapsed ? 52 : (isMobile ? 260 : 420);
 
   return (
     <div className="flex-1 overflow-hidden relative flex">
       {/* Left panel: Employee info */}
       <div
         className="shrink-0 flex flex-col border-r-2 border-slate-300 bg-white relative"
-        style={{ width: collapsed ? 52 : 420 }}
+        style={{ width: LEFT_PANEL_WIDTH }}
       >
         <button
           onClick={() => setCollapsed(c => !c)}
@@ -185,6 +230,11 @@ export function CalendarGrid({ employees, schedule, selectedMonth, selectedYear,
         >
           {collapsed ? (
             <div className="px-2 text-[10px] font-semibold w-full text-center">Nr</div>
+          ) : isMobile ? (
+            <>
+              <div className="w-[42px] shrink-0 px-2 text-[10px] font-semibold border-r border-slate-700">Nr</div>
+              <div className="flex-1 px-2 text-[10px] font-semibold">Name / Funktion</div>
+            </>
           ) : (
             <>
               <div className="w-[42px] shrink-0 px-2 text-[10px] font-semibold border-r border-slate-700">Nr</div>
@@ -201,6 +251,11 @@ export function CalendarGrid({ employees, schedule, selectedMonth, selectedYear,
           className="flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar"
           onScroll={() => syncScroll('left')}
         >
+          {activeEmployees.length === 0 && (
+            <div className="h-full flex items-center justify-center px-3 text-center text-xs text-slate-500">
+              Kein Mitarbeiter gefunden.
+            </div>
+          )}
           {activeEmployees.map((emp, rowIdx) => {
             const isEven = rowIdx % 2 === 0;
             const bg = isEven ? 'bg-white' : 'bg-slate-50';
@@ -216,6 +271,18 @@ export function CalendarGrid({ employees, schedule, selectedMonth, selectedYear,
                   <div className="w-full px-1 text-[10px] font-mono text-slate-500 text-center truncate" title={`${emp.name} ${emp.vorname}`}>
                     {emp.nr}
                   </div>
+                ) : isMobile ? (
+                  <>
+                    <div className="w-[42px] shrink-0 px-2 text-[10px] font-mono text-slate-500 border-r border-slate-200">{emp.nr}</div>
+                    <div className="flex-1 px-2 flex items-center gap-1.5 min-w-0">
+                      <span className="text-[11px] font-medium text-slate-800 truncate" title={`${emp.name} ${emp.vorname}`}>
+                        {emp.name} {emp.vorname}
+                      </span>
+                      <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full truncate max-w-[42%] ${funktionClass}`}>
+                        {emp.funktion}
+                      </span>
+                    </div>
+                  </>
                 ) : (
                   <>
                     <div className="w-[42px] shrink-0 px-2 text-[10px] font-mono text-slate-500 border-r border-slate-200">{emp.nr}</div>
@@ -272,6 +339,11 @@ export function CalendarGrid({ employees, schedule, selectedMonth, selectedYear,
           className="flex-1 overflow-auto"
           onScroll={() => syncScroll('right')}
         >
+          {activeEmployees.length === 0 && (
+            <div className="h-full flex items-center justify-center text-xs text-slate-500">
+              Keine passenden Eintraege im Kalender.
+            </div>
+          )}
           {activeEmployees.map((emp, rowIdx) => {
             const isEven = rowIdx % 2 === 0;
             const bg = isEven ? 'bg-white' : 'bg-slate-50';

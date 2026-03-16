@@ -30,6 +30,10 @@ function saveAuthUser(user: AuthUser | null) {
   localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(user));
 }
 
+function toDateKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 export default function App() {
   const {
     employees,
@@ -53,6 +57,9 @@ export default function App() {
   const [showTemplatePanel, setShowTemplatePanel] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(loadAuthUser);
+  const [scrollToDate, setScrollToDate] = useState<string | null>(null);
+  const [scrollToDateVersion, setScrollToDateVersion] = useState(0);
+  const [employeeSearch, setEmployeeSearch] = useState('');
 
   const isAdmin = currentUser?.role === 'admin';
 
@@ -79,6 +86,13 @@ export default function App() {
     setShowTemplatePanel(false);
     setShowExportDialog(false);
   }, []);
+
+  const handleGoToToday = useCallback(() => {
+    const now = new Date();
+    goToMonth(now.getMonth(), now.getFullYear());
+    setScrollToDate(toDateKey(now));
+    setScrollToDateVersion(v => v + 1);
+  }, [goToMonth]);
 
   const protectedActions = useMemo(() => ({
     setDuty: (employeeNr: number, date: string, dutyNr: number | null) => {
@@ -144,6 +158,7 @@ export default function App() {
         selectedYear={selectedYear}
         onNavigate={navigateMonth}
         onGoToMonth={goToMonth}
+        onGoToToday={handleGoToToday}
         onReset={protectedActions.resetData}
         onToggleEmployees={() => {
           if (!isAdmin) return;
@@ -155,6 +170,8 @@ export default function App() {
         }}
         onToggleExport={() => setShowExportDialog(true)}
         onLogout={handleLogout}
+        employeeSearch={employeeSearch}
+        onEmployeeSearchChange={setEmployeeSearch}
         showEmployeePanel={showEmployeePanel}
         showTemplatePanel={showTemplatePanel}
         currentUser={currentUser}
@@ -168,6 +185,9 @@ export default function App() {
         selectedYear={selectedYear}
         onSetDuty={protectedActions.setDuty}
         canEdit={isAdmin}
+        scrollToDate={scrollToDate}
+        scrollToDateVersion={scrollToDateVersion}
+        employeeSearchTerm={employeeSearch}
       />
 
       <Legend />

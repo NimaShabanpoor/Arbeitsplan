@@ -70,7 +70,7 @@ export function EmployeePanel({ employees, onUpdate, onAdd, onRemove, onClose }:
   return (
     <div className="fixed inset-0 z-50 flex">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative ml-auto w-[500px] bg-white shadow-2xl h-full overflow-hidden flex flex-col">
+      <div className="relative ml-auto w-full sm:w-[500px] bg-white shadow-2xl h-full overflow-hidden flex flex-col">
         <div className="bg-slate-800 text-white px-4 py-3 flex items-center justify-between">
           <h2 className="font-bold">Mitarbeiterverwaltung</h2>
           <button onClick={onClose} className="p-1 hover:bg-slate-700 rounded-md">

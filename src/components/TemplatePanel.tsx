@@ -141,7 +141,7 @@ export function TemplatePanel({
   return (
     <div className="fixed inset-0 z-50 flex">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative ml-auto w-[520px] bg-white shadow-2xl h-full overflow-hidden flex flex-col">
+      <div className="relative ml-auto w-full sm:w-[520px] bg-white shadow-2xl h-full overflow-hidden flex flex-col">
         <div className="bg-slate-800 text-white px-4 py-3 flex items-center justify-between shrink-0">
           <h2 className="font-bold flex items-center gap-2">
             <Copy className="w-5 h-5" />

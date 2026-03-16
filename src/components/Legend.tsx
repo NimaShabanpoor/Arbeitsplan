@@ -2,15 +2,15 @@ import { dutyTypes } from '../data/dutyTypes';
 
 export function Legend() {
   return (
-    <div className="bg-white border-t border-slate-200 px-4 py-3">
+    <div className="shrink-0 bg-white border-t border-slate-200 px-3 py-2 sm:px-4 sm:py-3">
       <div className="flex items-center gap-2 mb-2">
         <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Legende</span>
       </div>
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex gap-1.5 overflow-x-auto hide-scrollbar sm:flex-wrap sm:overflow-visible">
         {dutyTypes.map(dt => (
           <div
             key={dt.nr}
-            className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-50 border border-slate-100"
+            className="shrink-0 flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-50 border border-slate-100"
           >
             <span
               className="w-5 h-5 rounded flex items-center justify-center text-[9px] font-bold shrink-0"

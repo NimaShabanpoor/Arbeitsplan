@@ -228,7 +228,7 @@ export function CalendarGrid({
   const LEFT_PANEL_WIDTH = collapsed ? 52 : (isMobile ? 260 : 420);
 
   return (
-    <div className="flex-1 overflow-hidden relative flex">
+    <div className="flex-1 min-h-0 overflow-hidden relative flex">
       {/* Left panel: Employee info */}
       <div
         className="shrink-0 flex flex-col border-r-2 border-slate-300 bg-white relative"

@@ -35,6 +35,8 @@ function formatDate(day: number, month: number, year: number): string {
 
 interface DayInfo {
   day: number;
+  month: number;
+  year: number;
   dow: number;
   dateStr: string;
   isWeekend: boolean;
@@ -136,24 +138,44 @@ export function CalendarGrid({
   }, []);
 
   const days = useMemo<DayInfo[]>(() => {
-    const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+    const firstDayOfYear = new Date(selectedYear, 0, 1);
+    const lastDayOfYear = new Date(selectedYear, 11, 31);
     const today = new Date();
     const todayStr = formatDate(today.getDate(), today.getMonth(), today.getFullYear());
     const result: DayInfo[] = [];
-    for (let d = 1; d <= daysInMonth; d++) {
-      const date = new Date(selectedYear, selectedMonth, d);
+
+    for (
+      let date = new Date(firstDayOfYear);
+      date <= lastDayOfYear;
+      date.setDate(date.getDate() + 1)
+    ) {
+      const day = date.getDate();
+      const month = date.getMonth();
+      const year = date.getFullYear();
       const dow = date.getDay();
-      const dateStr = formatDate(d, selectedMonth, selectedYear);
+      const dateStr = formatDate(day, month, year);
       result.push({
-        day: d,
+        day,
+        month,
+        year,
         dow,
         dateStr,
         isWeekend: dow === 0 || dow === 6,
         isToday: dateStr === todayStr,
       });
     }
+
     return result;
-  }, [selectedMonth, selectedYear]);
+  }, [selectedYear]);
+
+  useEffect(() => {
+    const monthStart = formatDate(1, selectedMonth, selectedYear);
+    const dayIndex = days.findIndex(day => day.dateStr === monthStart);
+    if (dayIndex < 0) return;
+    const nextScrollLeft = dayIndex * 40;
+    if (headerRef.current) headerRef.current.scrollLeft = nextScrollLeft;
+    if (rightRef.current) rightRef.current.scrollLeft = nextScrollLeft;
+  }, [days, selectedMonth, selectedYear]);
 
   useEffect(() => {
     if (!scrollToDate) return;
@@ -328,6 +350,11 @@ export function CalendarGrid({
                 <div className={`text-[10px] font-bold leading-tight ${day.isToday ? 'text-yellow-300' : ''}`}>
                   {String(day.day).padStart(2, '0')}
                 </div>
+                {day.day === 1 && (
+                  <div className="text-[8px] leading-tight text-slate-300">
+                    {String(day.month + 1).padStart(2, '0')}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -369,7 +396,7 @@ export function CalendarGrid({
                         emp.nr,
                         day.dateStr,
                         `${emp.name} ${emp.vorname}`,
-                        `${DAY_NAMES_SHORT[day.dow]} ${String(day.day).padStart(2, '0')}.${String(selectedMonth + 1).padStart(2, '0')}.${selectedYear}`
+                        `${DAY_NAMES_SHORT[day.dow]} ${String(day.day).padStart(2, '0')}.${String(day.month + 1).padStart(2, '0')}.${day.year}`
                       )}
                     >
                       <DutyCell

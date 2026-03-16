@@ -43,3 +43,11 @@ export interface AppState {
   selectedMonth: number;
   selectedYear: number;
 }
+
+export type UserRole = 'admin' | 'mitarbeiter';
+
+export interface AuthUser {
+  username: string;
+  displayName: string;
+  role: UserRole;
+}

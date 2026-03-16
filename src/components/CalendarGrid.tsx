@@ -23,6 +23,7 @@ interface CalendarGridProps {
   selectedMonth: number;
   selectedYear: number;
   onSetDuty: (employeeNr: number, date: string, dutyNr: number | null) => void;
+  canEdit: boolean;
 }
 
 function formatDate(day: number, month: number, year: number): string {
@@ -77,7 +78,7 @@ const DutyCell = memo(function DutyCell({
   );
 });
 
-export function CalendarGrid({ employees, schedule, selectedMonth, selectedYear, onSetDuty }: CalendarGridProps) {
+export function CalendarGrid({ employees, schedule, selectedMonth, selectedYear, onSetDuty, canEdit }: CalendarGridProps) {
   const [selector, setSelector] = useState<SelectorState | null>(null);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -136,6 +137,7 @@ export function CalendarGrid({ employees, schedule, selectedMonth, selectedYear,
     empName: string,
     dateLabel: string,
   ) => {
+    if (!canEdit) return;
     e.stopPropagation();
     setSelector({
       x: e.clientX,
@@ -145,7 +147,7 @@ export function CalendarGrid({ employees, schedule, selectedMonth, selectedYear,
       employeeName: empName,
       dateLabel,
     });
-  }, []);
+  }, [canEdit]);
 
   const handleDutySelect = useCallback((dutyNr: number | null) => {
     if (selector) {
@@ -285,7 +287,11 @@ export function CalendarGrid({ employees, schedule, selectedMonth, selectedYear,
                   return (
                     <div
                       key={day.dateStr}
-                      className="w-[40px] shrink-0 border-r border-slate-200 cursor-pointer hover:ring-2 hover:ring-blue-400 hover:ring-inset hover:z-10"
+                      className={`w-[40px] shrink-0 border-r border-slate-200 ${
+                        canEdit
+                          ? 'cursor-pointer hover:ring-2 hover:ring-blue-400 hover:ring-inset hover:z-10'
+                          : 'cursor-not-allowed'
+                      }`}
                       onClick={e => handleCellClick(
                         e,
                         emp.nr,

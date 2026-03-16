@@ -1,4 +1,5 @@
-import { ChevronLeft, ChevronRight, RotateCcw, Users, CalendarDays, Copy, Download } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RotateCcw, Users, CalendarDays, Copy, Download, LogOut } from 'lucide-react';
+import { AuthUser } from '../types';
 
 const MONTHS = [
   'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
@@ -14,8 +15,11 @@ interface HeaderProps {
   onToggleEmployees: () => void;
   onToggleTemplates: () => void;
   onToggleExport: () => void;
+  onLogout: () => void;
   showEmployeePanel: boolean;
   showTemplatePanel: boolean;
+  currentUser: AuthUser;
+  isAdmin: boolean;
 }
 
 export function Header({
@@ -27,8 +31,11 @@ export function Header({
   onToggleEmployees,
   onToggleTemplates,
   onToggleExport,
+  onLogout,
   showEmployeePanel,
   showTemplatePanel,
+  currentUser,
+  isAdmin,
 }: HeaderProps) {
   return (
     <header className="bg-gradient-to-r from-slate-800 to-slate-900 text-white shadow-lg">
@@ -94,13 +101,15 @@ export function Header({
 
           <div className="w-px h-8 bg-slate-600 mx-1" />
 
-          <button
-            onClick={onToggleTemplates}
-            className={`p-2 rounded-lg transition-colors ${showTemplatePanel ? 'bg-purple-600' : 'hover:bg-slate-700'}`}
-            title="Wochenvorlagen"
-          >
-            <Copy className="w-5 h-5" />
-          </button>
+          {isAdmin && (
+            <button
+              onClick={onToggleTemplates}
+              className={`p-2 rounded-lg transition-colors ${showTemplatePanel ? 'bg-purple-600' : 'hover:bg-slate-700'}`}
+              title="Wochenvorlagen"
+            >
+              <Copy className="w-5 h-5" />
+            </button>
+          )}
 
           <button
             onClick={onToggleExport}
@@ -110,13 +119,15 @@ export function Header({
             <Download className="w-5 h-5" />
           </button>
 
-          <button
-            onClick={onToggleEmployees}
-            className={`p-2 rounded-lg transition-colors ${showEmployeePanel ? 'bg-blue-600' : 'hover:bg-slate-700'}`}
-            title="Mitarbeiterverwaltung"
-          >
-            <Users className="w-5 h-5" />
-          </button>
+          {isAdmin && (
+            <button
+              onClick={onToggleEmployees}
+              className={`p-2 rounded-lg transition-colors ${showEmployeePanel ? 'bg-blue-600' : 'hover:bg-slate-700'}`}
+              title="Mitarbeiterverwaltung"
+            >
+              <Users className="w-5 h-5" />
+            </button>
+          )}
 
           <button
             onClick={() => {
@@ -124,10 +135,28 @@ export function Header({
                 onReset();
               }
             }}
-            className="p-2 rounded-lg hover:bg-slate-700 transition-colors text-slate-400 hover:text-white"
+            className="p-2 rounded-lg hover:bg-slate-700 transition-colors text-slate-400 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
             title="Daten zurücksetzen"
+            disabled={!isAdmin}
           >
             <RotateCcw className="w-4 h-4" />
+          </button>
+
+          <div className="w-px h-8 bg-slate-600 mx-1" />
+
+          <div className="text-right mr-1">
+            <div className="text-[11px] text-slate-300 leading-tight">{currentUser.displayName}</div>
+            <div className={`text-[10px] leading-tight ${isAdmin ? 'text-emerald-300' : 'text-amber-300'}`}>
+              {isAdmin ? 'Admin' : 'Mitarbeiter'}
+            </div>
+          </div>
+
+          <button
+            onClick={onLogout}
+            className="p-2 rounded-lg hover:bg-slate-700 transition-colors"
+            title="Abmelden"
+          >
+            <LogOut className="w-5 h-5" />
           </button>
         </div>
       </div>

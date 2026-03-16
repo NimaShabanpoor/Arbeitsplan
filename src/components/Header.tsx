@@ -23,6 +23,7 @@ interface HeaderProps {
   showTemplatePanel: boolean;
   currentUser: AuthUser;
   isAdmin: boolean;
+  showActionBar?: boolean;
 }
 
 export function Header({
@@ -42,6 +43,7 @@ export function Header({
   showTemplatePanel,
   currentUser,
   isAdmin,
+  showActionBar = true,
 }: HeaderProps) {
   return (
     <header className="bg-gradient-to-r from-slate-800 to-slate-900 text-white shadow-lg">
@@ -54,8 +56,9 @@ export function Header({
           </div>
         </div>
 
-        <div className="w-full md:w-auto overflow-x-auto hide-scrollbar">
-          <div className="flex items-center gap-2 min-w-max">
+        {showActionBar && (
+          <div className="w-full md:w-auto overflow-x-auto hide-scrollbar">
+            <div className="flex items-center gap-2 min-w-max">
           <button
             onClick={() => onNavigate(-1)}
             className="p-2 rounded-lg hover:bg-slate-700 transition-colors"
@@ -162,8 +165,9 @@ export function Header({
           >
             <LogOut className="w-5 h-5" />
           </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <div className="px-4 pb-2">

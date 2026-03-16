@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Employee, ScheduleMap } from '../types';
-import { exportScheduleToExcel, exportFullScheduleToExcel } from '../utils/exportExcel';
-import { X, Download, FileSpreadsheet } from 'lucide-react';
+import { exportScheduleToPdf, exportFullScheduleToPdf } from '../utils/exportPdf';
+import { X, Download, FileText } from 'lucide-react';
 
 const MONTHS = [
   'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
@@ -25,13 +25,13 @@ export function ExportDialog({ employees, schedule, selectedMonth, selectedYear,
 
   const handleExport = () => {
     if (exportType === 'month') {
-      exportScheduleToExcel(employees, schedule, selectedMonth, selectedYear);
+      exportScheduleToPdf(employees, schedule, selectedMonth, selectedYear);
     } else {
       if (startYear > endYear || (startYear === endYear && startMonth > endMonth)) {
         alert('Startmonat muss vor dem Endmonat liegen.');
         return;
       }
-      exportFullScheduleToExcel(employees, schedule, startMonth, startYear, endMonth, endYear);
+      exportFullScheduleToPdf(employees, schedule, startMonth, startYear, endMonth, endYear);
     }
     onClose();
   };
@@ -42,8 +42,8 @@ export function ExportDialog({ employees, schedule, selectedMonth, selectedYear,
       <div className="relative bg-white rounded-2xl shadow-2xl w-[calc(100%-1.5rem)] max-w-[420px] overflow-hidden">
         <div className="bg-slate-800 text-white px-4 py-3 flex items-center justify-between">
           <h2 className="font-bold flex items-center gap-2">
-            <FileSpreadsheet className="w-5 h-5" />
-            Arbeitsplan exportieren
+            <FileText className="w-5 h-5" />
+            Arbeitsplan als PDF exportieren
           </h2>
           <button onClick={onClose} className="p-1 hover:bg-slate-700 rounded-md">
             <X className="w-5 h-5" />
@@ -130,7 +130,7 @@ export function ExportDialog({ employees, schedule, selectedMonth, selectedYear,
             onClick={handleExport}
             className="w-full flex items-center justify-center gap-2 text-sm px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-500 transition-colors font-medium"
           >
-            <Download className="w-4 h-4" /> Als Excel herunterladen
+            <Download className="w-4 h-4" /> Als PDF herunterladen
           </button>
         </div>
       </div>

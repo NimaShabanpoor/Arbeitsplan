@@ -18,6 +18,10 @@ function hexToRgb(hex: string): string {
   return h.length === 6 ? h.toUpperCase() : '000000';
 }
 
+function hasAnyDutyForDate(employees: Employee[], schedule: ScheduleMap, date: string): boolean {
+  return employees.some(emp => schedule[makeKey(emp.nr, date)] !== null && schedule[makeKey(emp.nr, date)] !== undefined);
+}
+
 export function exportScheduleToExcel(
   employees: Employee[],
   schedule: ScheduleMap,
@@ -26,11 +30,14 @@ export function exportScheduleToExcel(
 ) {
   const active = employees.filter(e => e.aktiv);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const includedDays = Array.from({ length: daysInMonth }, (_, i) => i + 1).filter(d =>
+    hasAnyDutyForDate(active, schedule, dateStr(d, month, year))
+  );
 
   const wb = XLSX.utils.book_new();
 
   const headerRow1 = ['Nr', 'Name / Vorname', 'Funktion', 'Standort'];
-  for (let d = 1; d <= daysInMonth; d++) {
+  for (const d of includedDays) {
     const date = new Date(year, month, d);
     const dow = date.getDay();
     headerRow1.push(`${DAY_NAMES[dow]} ${String(d).padStart(2, '0')}.${String(month + 1).padStart(2, '0')}`);
@@ -49,7 +56,7 @@ export function exportScheduleToExcel(
       emp.funktion,
       emp.standort,
     ];
-    for (let d = 1; d <= daysInMonth; d++) {
+    for (const d of includedDays) {
       const key = makeKey(emp.nr, dateStr(d, month, year));
       const duty = schedule[key] ?? null;
       if (duty !== null) {
@@ -76,7 +83,7 @@ export function exportScheduleToExcel(
     { wch: 22 },
     { wch: 22 },
     { wch: 18 },
-    ...Array(daysInMonth).fill({ wch: 8 }),
+    ...Array(includedDays.length).fill({ wch: 8 }),
   ];
 
   ws['!merges'] = [
@@ -96,9 +103,9 @@ export function exportScheduleToExcel(
   }
 
   for (let rowIdx = 0; rowIdx < active.length; rowIdx++) {
-    for (let d = 1; d <= daysInMonth; d++) {
+    for (let dayCol = 0; dayCol < includedDays.length; dayCol++) {
       const r = headerRowIdx + 1 + rowIdx;
-      const c = 3 + d;
+      const c = 4 + dayCol;
       const cellRef = XLSX.utils.encode_cell({ r, c });
       const cell = ws[cellRef];
       if (cell && cell.v) {
@@ -137,9 +144,18 @@ export function exportFullScheduleToExcel(
 
   while (y < endYear || (y === endYear && m <= endMonth)) {
     const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const includedDays = Array.from({ length: daysInMonth }, (_, i) => i + 1).filter(d =>
+      hasAnyDutyForDate(active, schedule, dateStr(d, m, y))
+    );
+
+    if (includedDays.length === 0) {
+      m++;
+      if (m > 11) { m = 0; y++; }
+      continue;
+    }
 
     const headerRow = ['Nr', 'Name / Vorname', 'Funktion', 'Standort'];
-    for (let d = 1; d <= daysInMonth; d++) {
+    for (const d of includedDays) {
       const date = new Date(y, m, d);
       const dow = date.getDay();
       headerRow.push(`${DAY_NAMES[dow]} ${String(d).padStart(2, '0')}`);
@@ -157,7 +173,7 @@ export function exportFullScheduleToExcel(
         emp.funktion,
         emp.standort,
       ];
-      for (let d = 1; d <= daysInMonth; d++) {
+      for (const d of includedDays) {
         const key = makeKey(emp.nr, dateStr(d, m, y));
         const duty = schedule[key] ?? null;
         row.push(duty !== null ? String(duty) : '');
@@ -168,7 +184,7 @@ export function exportFullScheduleToExcel(
     const ws = XLSX.utils.aoa_to_sheet(rows);
     ws['!cols'] = [
       { wch: 6 }, { wch: 22 }, { wch: 22 }, { wch: 18 },
-      ...Array(daysInMonth).fill({ wch: 8 }),
+      ...Array(includedDays.length).fill({ wch: 8 }),
     ];
 
     const sheetName = `${MONTH_NAMES[m].slice(0, 3)} ${y}`;

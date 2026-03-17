@@ -20,6 +20,7 @@ const FUNKTIONEN = [
 ];
 
 const STANDORTE = ['Zürich Altstetten', 'St.Gallen', 'Luzern', 'Bern'];
+const DUTY_CODES = [1, 5, 10, 14, 15, 16, 17, 18, 19, 20, 30, 40, 41, 45, 50, 51, 52, 60];
 
 export function EmployeePanel({ employees, onUpdate, onAdd, onRemove, onClose }: EmployeePanelProps) {
   const [editingNr, setEditingNr] = useState<number | null>(null);
@@ -33,7 +34,7 @@ export function EmployeePanel({ employees, onUpdate, onAdd, onRemove, onClose }:
 
   const startEdit = (emp: Employee) => {
     setEditingNr(emp.nr);
-    setEditForm({ ...emp });
+    setEditForm({ ...emp, dienstStatistik: { ...(emp.dienstStatistik || {}) } });
   };
 
   const saveEdit = () => {
@@ -62,9 +63,31 @@ export function EmployeePanel({ employees, onUpdate, onAdd, onRemove, onClose }:
       aktiv: addForm.aktiv ?? true,
       email: addForm.email,
       telefon: addForm.telefon,
+      pzvKd: addForm.pzvKd,
+      totalZuweisungen: addForm.totalZuweisungen,
+      ferienguthaben: addForm.ferienguthaben,
+      restferien: addForm.restferien,
+      krankInProzent: addForm.krankInProzent,
+      support: addForm.support as Employee['support'],
+      supportAktiv: addForm.supportAktiv as Employee['supportAktiv'],
+      ferien2026: addForm.ferien2026,
+      dienstStatistik: addForm.dienstStatistik,
     });
     setAddForm({ aktiv: true, funktion: FUNKTIONEN[0], standort: STANDORTE[0] });
     setShowAdd(false);
+  };
+
+  const updateDutyCount = (code: number, value: string) => {
+    const parsed = value === '' ? undefined : Number(value);
+    setEditForm(prev => {
+      const stats = { ...(prev.dienstStatistik || {}) };
+      if (parsed === undefined || Number.isNaN(parsed)) {
+        delete stats[String(code)];
+      } else {
+        stats[String(code)] = parsed;
+      }
+      return { ...prev, dienstStatistik: stats };
+    });
   };
 
   return (
@@ -127,6 +150,88 @@ export function EmployeePanel({ employees, onUpdate, onAdd, onRemove, onClose }:
                       className="text-sm border border-slate-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      value={editForm.pzvKd || ''}
+                      onChange={e => setEditForm(f => ({ ...f, pzvKd: e.target.value }))}
+                      placeholder="100 PZV / 101 KD"
+                      className="text-sm border border-slate-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <input
+                      type="number"
+                      value={editForm.totalZuweisungen ?? ''}
+                      onChange={e => setEditForm(f => ({ ...f, totalZuweisungen: e.target.value === '' ? undefined : Number(e.target.value) }))}
+                      placeholder="Total Zuweisungen"
+                      className="text-sm border border-slate-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="number"
+                      value={editForm.ferienguthaben ?? ''}
+                      onChange={e => setEditForm(f => ({ ...f, ferienguthaben: e.target.value === '' ? undefined : Number(e.target.value) }))}
+                      placeholder="Ferienguthaben lfd. Jahr"
+                      className="text-sm border border-slate-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <input
+                      type="number"
+                      value={editForm.restferien ?? ''}
+                      onChange={e => setEditForm(f => ({ ...f, restferien: e.target.value === '' ? undefined : Number(e.target.value) }))}
+                      placeholder="Restferien"
+                      className="text-sm border border-slate-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={editForm.krankInProzent ?? ''}
+                      onChange={e => setEditForm(f => ({ ...f, krankInProzent: e.target.value === '' ? undefined : Number(e.target.value) }))}
+                      placeholder="Krank in %"
+                      className="text-sm border border-slate-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <select
+                      value={editForm.support || ''}
+                      onChange={e => setEditForm(f => ({ ...f, support: e.target.value as Employee['support'] }))}
+                      className="text-sm border border-slate-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Support</option>
+                      <option value="X">X</option>
+                      <option value="N">N</option>
+                    </select>
+                    <select
+                      value={editForm.supportAktiv || ''}
+                      onChange={e => setEditForm(f => ({ ...f, supportAktiv: e.target.value as Employee['supportAktiv'] }))}
+                      className="text-sm border border-slate-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Aktiv</option>
+                      <option value="X">X</option>
+                      <option value="N">N</option>
+                    </select>
+                    <input
+                      type="number"
+                      value={editForm.ferien2026 ?? ''}
+                      onChange={e => setEditForm(f => ({ ...f, ferien2026: e.target.value === '' ? undefined : Number(e.target.value) }))}
+                      placeholder="Ferien 2026"
+                      className="text-sm border border-slate-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="border border-slate-200 rounded-md p-2 bg-slate-50">
+                    <div className="text-[11px] font-semibold text-slate-600 mb-2">Dienste (Anzahl)</div>
+                    <div className="grid grid-cols-3 md:grid-cols-6 gap-1.5">
+                      {DUTY_CODES.map(code => (
+                        <label key={code} className="text-[11px] text-slate-600">
+                          <span className="block mb-0.5">{code}</span>
+                          <input
+                            type="number"
+                            value={editForm.dienstStatistik?.[String(code)] ?? ''}
+                            onChange={e => updateDutyCount(code, e.target.value)}
+                            className="w-full text-xs border border-slate-300 rounded-md px-1.5 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  </div>
                   <label className="flex items-center gap-2 text-sm">
                     <input
                       type="checkbox"
@@ -158,6 +263,16 @@ export function EmployeePanel({ employees, onUpdate, onAdd, onRemove, onClose }:
                     <div className="text-xs text-slate-500 mt-0.5">
                       {emp.funktion} · {emp.standort}
                     </div>
+                    {(emp.totalZuweisungen !== undefined || emp.ferienguthaben !== undefined || emp.restferien !== undefined || emp.ferien2026 !== undefined) && (
+                      <div className="text-[10px] text-slate-500 mt-1">
+                        Total: {emp.totalZuweisungen ?? '-'} · Ferien: {emp.ferienguthaben ?? '-'} · Rest: {emp.restferien ?? '-'} · Ferien 2026: {emp.ferien2026 ?? '-'}
+                      </div>
+                    )}
+                    {(emp.krankInProzent !== undefined || emp.support || emp.supportAktiv) && (
+                      <div className="text-[10px] text-slate-500">
+                        Krank in %: {emp.krankInProzent ?? '-'} · Support: {emp.support || '-'} · Aktiv: {emp.supportAktiv || '-'}
+                      </div>
+                    )}
                     {emp.email && <div className="text-[10px] text-slate-400 mt-0.5">{emp.email}</div>}
                   </div>
                   <div className="flex gap-1">

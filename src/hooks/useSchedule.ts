@@ -21,10 +21,27 @@ function saveToStorage<T>(key: string, data: T) {
   } catch { /* ignore */ }
 }
 
+function mergeEmployeesWithDefaults(stored: Employee[], defaults: Employee[]): Employee[] {
+  const byNr = new Map(defaults.map(emp => [emp.nr, emp]));
+  return stored.map(emp => {
+    const fallback = byNr.get(emp.nr);
+    if (!fallback) return emp;
+    return {
+      ...fallback,
+      ...emp,
+      dienstStatistik: {
+        ...(fallback.dienstStatistik || {}),
+        ...(emp.dienstStatistik || {}),
+      },
+    };
+  });
+}
+
 export function useSchedule() {
-  const [employees, setEmployees] = useState<Employee[]>(() =>
-    loadFromStorage(STORAGE_KEY_EMPLOYEES, defaultEmployees)
-  );
+  const [employees, setEmployees] = useState<Employee[]>(() => {
+    const loaded = loadFromStorage(STORAGE_KEY_EMPLOYEES, defaultEmployees);
+    return mergeEmployeesWithDefaults(loaded, defaultEmployees);
+  });
 
   const [schedule, setSchedule] = useState<ScheduleMap>(() =>
     loadFromStorage(STORAGE_KEY_SCHEDULE, buildInitialSchedule())

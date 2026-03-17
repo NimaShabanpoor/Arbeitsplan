@@ -11,6 +11,13 @@ export interface Employee {
   geburtstag?: string;
   ferienguthaben?: number;
   restferien?: number;
+  pzvKd?: string;
+  totalZuweisungen?: number;
+  krankInProzent?: number;
+  support?: 'X' | 'N' | '';
+  supportAktiv?: 'X' | 'N' | '';
+  ferien2026?: number;
+  dienstStatistik?: Record<string, number>;
 }
 
 export interface DutyType {

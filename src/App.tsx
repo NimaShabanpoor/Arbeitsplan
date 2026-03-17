@@ -66,6 +66,7 @@ export default function App() {
   const [scrollToDateVersion, setScrollToDateVersion] = useState(0);
   const [employeeSearch, setEmployeeSearch] = useState('');
   const [selectedDutyFilters, setSelectedDutyFilters] = useState<number[]>([]);
+  const [showDutyFilterPanel, setShowDutyFilterPanel] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileSection, setMobileSection] = useState<'calendar' | 'actions' | 'legend'>('calendar');
 
@@ -199,15 +200,51 @@ export default function App() {
         onLogout={handleLogout}
         employeeSearch={employeeSearch}
         onEmployeeSearchChange={setEmployeeSearch}
-        selectedDutyFilters={selectedDutyFilters}
-        onDutyFilterToggle={handleDutyFilterToggle}
-        onDutyFilterClear={clearDutyFilters}
         showEmployeePanel={showEmployeePanel}
         showTemplatePanel={showTemplatePanel}
         currentUser={currentUser}
         isAdmin={isAdmin}
         showActionBar={!isMobile}
       />
+
+      <div className="shrink-0 bg-white border-b border-slate-200 px-3 py-2">
+        <div className="flex items-center justify-between">
+          <div className="text-xs font-semibold text-slate-700">
+            Dienstfilter
+          </div>
+          <button
+            onClick={() => setShowDutyFilterPanel(v => !v)}
+            className="text-xs px-2.5 py-1 rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+          >
+            {showDutyFilterPanel ? 'Filter ausblenden' : 'Filter anzeigen'}
+          </button>
+        </div>
+        {showDutyFilterPanel && (
+          <div className="mt-2 border border-slate-200 rounded-md p-2 bg-white">
+            <div className="flex items-center justify-end mb-1">
+              <button
+                onClick={clearDutyFilters}
+                className="text-[10px] text-slate-500 hover:text-slate-700"
+              >
+                Zurücksetzen
+              </button>
+            </div>
+            <div className="max-h-24 overflow-y-auto border border-slate-200 rounded-md p-2 grid grid-cols-2 sm:grid-cols-4 gap-1">
+              {dutyTypes.map(dt => (
+                <label key={dt.nr} className="flex items-center gap-2 text-xs text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={selectedDutyFilters.includes(dt.nr)}
+                    onChange={() => handleDutyFilterToggle(dt.nr)}
+                    className="rounded border-slate-300"
+                  />
+                  <span>{dt.nr} - {dt.shortName}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       {isMobile && (
         <div className="shrink-0 bg-white border-b border-slate-200 px-3 py-2">
@@ -331,37 +368,6 @@ export default function App() {
             >
               Heute anzeigen
             </button>
-            <details className="rounded-md border border-slate-200 bg-white">
-              <summary className="list-none cursor-pointer px-2 py-2 text-xs font-semibold text-slate-700 flex items-center justify-between">
-                <span>Dienste filtern</span>
-                <span className="text-[10px] text-slate-500">
-                  {selectedDutyFilters.length === 0 ? 'Alle' : `${selectedDutyFilters.length} gewählt`}
-                </span>
-              </summary>
-              <div className="px-2 pb-2">
-                <div className="flex items-center justify-end mb-1">
-                  <button
-                    onClick={clearDutyFilters}
-                    className="text-[10px] text-slate-500 hover:text-slate-700"
-                  >
-                    Zurücksetzen
-                  </button>
-                </div>
-                <div className="max-h-28 overflow-y-auto border border-slate-200 rounded-md p-2 grid grid-cols-1 gap-1">
-                  {dutyTypes.map(dt => (
-                    <label key={dt.nr} className="flex items-center gap-2 text-xs text-slate-700">
-                      <input
-                        type="checkbox"
-                        checked={selectedDutyFilters.includes(dt.nr)}
-                        onChange={() => handleDutyFilterToggle(dt.nr)}
-                        className="rounded border-slate-300"
-                      />
-                      <span>{dt.nr} - {dt.name}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </details>
           </div>
 
           <div className="bg-white border border-slate-200 rounded-lg p-3">

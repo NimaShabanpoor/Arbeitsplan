@@ -1,6 +1,5 @@
 import { ChevronLeft, ChevronRight, RotateCcw, Users, CalendarDays, Copy, Download, LogOut, Search, X } from 'lucide-react';
 import { AuthUser } from '../types';
-import { dutyTypes } from '../data/dutyTypes';
 
 const MONTHS = [
   'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
@@ -20,9 +19,6 @@ interface HeaderProps {
   onLogout: () => void;
   employeeSearch: string;
   onEmployeeSearchChange: (value: string) => void;
-  selectedDutyFilters: number[];
-  onDutyFilterToggle: (dutyNr: number) => void;
-  onDutyFilterClear: () => void;
   showEmployeePanel: boolean;
   showTemplatePanel: boolean;
   currentUser: AuthUser;
@@ -43,9 +39,6 @@ export function Header({
   onLogout,
   employeeSearch,
   onEmployeeSearchChange,
-  selectedDutyFilters,
-  onDutyFilterToggle,
-  onDutyFilterClear,
   showEmployeePanel,
   showTemplatePanel,
   currentUser,
@@ -182,7 +175,7 @@ export function Header({
           <div className="text-sm font-semibold text-blue-300">
             {MONTHS[selectedMonth]} {selectedYear}
           </div>
-          <div className="flex flex-col gap-2 w-full sm:w-[560px]">
+          <div className="w-full sm:w-72">
             <div className="relative w-full">
               <Search className="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
               <input
@@ -201,38 +194,6 @@ export function Header({
                 </button>
               )}
             </div>
-            <details className="relative">
-              <summary className="list-none h-8 rounded-lg bg-slate-700/80 border border-slate-600 px-2 text-xs text-white flex items-center justify-between cursor-pointer">
-                <span>Dienste filtern</span>
-                <span className="text-[10px] text-slate-300">
-                  {selectedDutyFilters.length === 0 ? 'Alle' : `${selectedDutyFilters.length} gewählt`}
-                </span>
-              </summary>
-              <div className="absolute z-20 mt-1 w-full rounded-lg bg-slate-800 border border-slate-600 p-2 shadow-xl">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[11px] text-slate-300 font-semibold">Auswahl</span>
-                  <button
-                    onClick={onDutyFilterClear}
-                    className="text-[10px] text-slate-300 hover:text-white"
-                  >
-                    Zurücksetzen
-                  </button>
-                </div>
-                <div className="max-h-28 overflow-y-auto hide-scrollbar grid grid-cols-2 sm:grid-cols-3 gap-x-2 gap-y-1">
-                  {dutyTypes.map(dt => (
-                    <label key={dt.nr} className="flex items-center gap-1.5 text-[10px] text-slate-200 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedDutyFilters.includes(dt.nr)}
-                        onChange={() => onDutyFilterToggle(dt.nr)}
-                        className="rounded border-slate-400"
-                      />
-                      <span>{dt.nr} {dt.shortName}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </details>
           </div>
         </div>
       </div>

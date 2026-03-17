@@ -99,7 +99,7 @@ export function CalendarGrid({
   selectedDutyFilters,
 }: CalendarGridProps) {
   const [selector, setSelector] = useState<SelectorState | null>(null);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => window.innerWidth <= 768);
   const [isMobile, setIsMobile] = useState(false);
 
   const leftRef = useRef<HTMLDivElement>(null);
@@ -281,9 +281,9 @@ export function CalendarGrid({
         {/* Left body (synced vertical scroll) */}
         <div
           ref={leftRef}
-          className="flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar"
+          className="flex-1 overflow-y-scroll overflow-x-hidden overscroll-contain"
           onScroll={() => syncScroll('left')}
-          style={{ WebkitOverflowScrolling: 'touch' }}
+          style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
         >
           {filteredEmployees.length === 0 && (
             <div className="h-full flex items-center justify-center px-3 text-center text-xs text-slate-500">
@@ -375,9 +375,9 @@ export function CalendarGrid({
         {/* Calendar body (scrollable in both directions) */}
         <div
           ref={rightRef}
-          className="flex-1 overflow-auto"
+          className="flex-1 overflow-x-auto overflow-y-scroll overscroll-contain"
           onScroll={() => syncScroll('right')}
-          style={{ WebkitOverflowScrolling: 'touch' }}
+          style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y pan-x' }}
         >
           {filteredEmployees.length === 0 && (
             <div className="h-full flex items-center justify-center text-xs text-slate-500">

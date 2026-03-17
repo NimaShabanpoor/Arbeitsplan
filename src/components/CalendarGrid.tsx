@@ -125,6 +125,7 @@ export function CalendarGrid({
   }, []);
 
   const syncScroll = useCallback((source: 'left' | 'right') => {
+    if (isMobile && source === 'left') return;
     if (syncing.current) return;
     syncing.current = true;
     const from = source === 'left' ? leftRef.current : rightRef.current;
@@ -136,7 +137,7 @@ export function CalendarGrid({
       headerRef.current.scrollLeft = rightRef.current.scrollLeft;
     }
     requestAnimationFrame(() => { syncing.current = false; });
-  }, []);
+  }, [isMobile]);
 
   const days = useMemo<DayInfo[]>(() => {
     const firstDayOfYear = new Date(selectedYear, 0, 1);
@@ -281,9 +282,11 @@ export function CalendarGrid({
         {/* Left body (synced vertical scroll) */}
         <div
           ref={leftRef}
-          className="flex-1 overflow-y-scroll overflow-x-hidden overscroll-contain"
-          onScroll={() => syncScroll('left')}
-          style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
+          className={`flex-1 overflow-x-hidden overscroll-contain ${isMobile ? 'overflow-y-hidden' : 'overflow-y-scroll'}`}
+          onScroll={() => {
+            if (!isMobile) syncScroll('left');
+          }}
+          style={{ WebkitOverflowScrolling: 'touch', touchAction: isMobile ? 'none' : 'pan-y' }}
         >
           {filteredEmployees.length === 0 && (
             <div className="h-full flex items-center justify-center px-3 text-center text-xs text-slate-500">
@@ -377,7 +380,7 @@ export function CalendarGrid({
           ref={rightRef}
           className="flex-1 overflow-x-auto overflow-y-scroll overscroll-contain"
           onScroll={() => syncScroll('right')}
-          style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y pan-x' }}
+          style={{ WebkitOverflowScrolling: 'touch', touchAction: 'auto' }}
         >
           {filteredEmployees.length === 0 && (
             <div className="h-full flex items-center justify-center text-xs text-slate-500">

@@ -6,6 +6,7 @@ import { EmployeePanel } from './components/EmployeePanel';
 import { TemplatePanel } from './components/TemplatePanel';
 import { ExportDialog } from './components/ExportDialog';
 import { LoginScreen } from './components/LoginScreen';
+import { AdditionalInfoPanel } from './components/AdditionalInfoPanel';
 import { useSchedule } from './hooks/useSchedule';
 import { authUsers } from './data/authUsers';
 import { AuthUser } from './types';
@@ -67,6 +68,7 @@ export default function App() {
   const [employeeSearch, setEmployeeSearch] = useState('');
   const [selectedDutyFilters, setSelectedDutyFilters] = useState<number[]>([]);
   const [showDutyFilterPanel, setShowDutyFilterPanel] = useState(false);
+  const [showAdditionalInfoPanel, setShowAdditionalInfoPanel] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileSection, setMobileSection] = useState<'calendar' | 'actions' | 'legend'>('calendar');
 
@@ -208,16 +210,26 @@ export default function App() {
       />
 
       <div className="shrink-0 bg-white border-b border-slate-200 px-3 py-2">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <div className="text-xs font-semibold text-slate-700">
             Dienstfilter
           </div>
-          <button
-            onClick={() => setShowDutyFilterPanel(v => !v)}
-            className="text-xs px-2.5 py-1 rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-          >
-            {showDutyFilterPanel ? 'Filter ausblenden' : 'Filter anzeigen'}
-          </button>
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <button
+                onClick={() => setShowAdditionalInfoPanel(true)}
+                className="text-xs px-2.5 py-1 rounded-md border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 font-semibold"
+              >
+                Zusatzinfos bearbeiten
+              </button>
+            )}
+            <button
+              onClick={() => setShowDutyFilterPanel(v => !v)}
+              className="text-xs px-2.5 py-1 rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+            >
+              {showDutyFilterPanel ? 'Filter ausblenden' : 'Filter anzeigen'}
+            </button>
+          </div>
         </div>
         {showDutyFilterPanel && (
           <div className="mt-2 border border-slate-200 rounded-md p-2 bg-white">
@@ -436,6 +448,14 @@ export default function App() {
           onApplyTemplate={protectedActions.applyTemplate}
           onClose={() => setShowTemplatePanel(false)}
           canEdit={isAdmin}
+        />
+      )}
+
+      {showAdditionalInfoPanel && isAdmin && (
+        <AdditionalInfoPanel
+          employees={employees}
+          onUpdate={protectedActions.updateEmployee}
+          onClose={() => setShowAdditionalInfoPanel(false)}
         />
       )}
 

@@ -9,6 +9,7 @@ import { LoginScreen } from './components/LoginScreen';
 import { useSchedule } from './hooks/useSchedule';
 import { authUsers } from './data/authUsers';
 import { AuthUser } from './types';
+import { dutyTypes } from './data/dutyTypes';
 
 const STORAGE_KEY_AUTH = 'benedict_auth_user';
 const MONTHS = [
@@ -64,6 +65,7 @@ export default function App() {
   const [scrollToDate, setScrollToDate] = useState<string | null>(null);
   const [scrollToDateVersion, setScrollToDateVersion] = useState(0);
   const [employeeSearch, setEmployeeSearch] = useState('');
+  const [selectedDutyFilters, setSelectedDutyFilters] = useState<number[]>([]);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileSection, setMobileSection] = useState<'calendar' | 'actions' | 'legend'>('calendar');
 
@@ -108,6 +110,16 @@ export default function App() {
     setScrollToDate(toDateKey(now));
     setScrollToDateVersion(v => v + 1);
   }, [goToMonth]);
+
+  const handleDutyFilterToggle = useCallback((dutyNr: number) => {
+    setSelectedDutyFilters(prev =>
+      prev.includes(dutyNr) ? prev.filter(nr => nr !== dutyNr) : [...prev, dutyNr]
+    );
+  }, []);
+
+  const clearDutyFilters = useCallback(() => {
+    setSelectedDutyFilters([]);
+  }, []);
 
   const protectedActions = useMemo(() => ({
     setDuty: (employeeNr: number, date: string, dutyNr: number | null) => {
@@ -187,6 +199,9 @@ export default function App() {
         onLogout={handleLogout}
         employeeSearch={employeeSearch}
         onEmployeeSearchChange={setEmployeeSearch}
+        selectedDutyFilters={selectedDutyFilters}
+        onDutyFilterToggle={handleDutyFilterToggle}
+        onDutyFilterClear={clearDutyFilters}
         showEmployeePanel={showEmployeePanel}
         showTemplatePanel={showTemplatePanel}
         currentUser={currentUser}
@@ -244,6 +259,7 @@ export default function App() {
               scrollToDate={scrollToDate}
               scrollToDateVersion={scrollToDateVersion}
               employeeSearchTerm={employeeSearch}
+              selectedDutyFilters={selectedDutyFilters}
             />
           </div>
           <Legend />
@@ -262,6 +278,7 @@ export default function App() {
             scrollToDate={scrollToDate}
             scrollToDateVersion={scrollToDateVersion}
             employeeSearchTerm={employeeSearch}
+            selectedDutyFilters={selectedDutyFilters}
           />
         </div>
       )}
@@ -314,6 +331,37 @@ export default function App() {
             >
               Heute anzeigen
             </button>
+            <details className="rounded-md border border-slate-200 bg-white">
+              <summary className="list-none cursor-pointer px-2 py-2 text-xs font-semibold text-slate-700 flex items-center justify-between">
+                <span>Dienste filtern</span>
+                <span className="text-[10px] text-slate-500">
+                  {selectedDutyFilters.length === 0 ? 'Alle' : `${selectedDutyFilters.length} gewählt`}
+                </span>
+              </summary>
+              <div className="px-2 pb-2">
+                <div className="flex items-center justify-end mb-1">
+                  <button
+                    onClick={clearDutyFilters}
+                    className="text-[10px] text-slate-500 hover:text-slate-700"
+                  >
+                    Zurücksetzen
+                  </button>
+                </div>
+                <div className="max-h-28 overflow-y-auto border border-slate-200 rounded-md p-2 grid grid-cols-1 gap-1">
+                  {dutyTypes.map(dt => (
+                    <label key={dt.nr} className="flex items-center gap-2 text-xs text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={selectedDutyFilters.includes(dt.nr)}
+                        onChange={() => handleDutyFilterToggle(dt.nr)}
+                        className="rounded border-slate-300"
+                      />
+                      <span>{dt.nr} - {dt.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </details>
           </div>
 
           <div className="bg-white border border-slate-200 rounded-lg p-3">

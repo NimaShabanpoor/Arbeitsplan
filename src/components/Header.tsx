@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight, RotateCcw, Users, CalendarDays, Copy, Download, LogOut, Search, X } from 'lucide-react';
 import { AuthUser } from '../types';
+import { dutyTypes } from '../data/dutyTypes';
 
 const MONTHS = [
   'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
@@ -19,6 +20,9 @@ interface HeaderProps {
   onLogout: () => void;
   employeeSearch: string;
   onEmployeeSearchChange: (value: string) => void;
+  selectedDutyFilters: number[];
+  onDutyFilterToggle: (dutyNr: number) => void;
+  onDutyFilterClear: () => void;
   showEmployeePanel: boolean;
   showTemplatePanel: boolean;
   currentUser: AuthUser;
@@ -39,6 +43,9 @@ export function Header({
   onLogout,
   employeeSearch,
   onEmployeeSearchChange,
+  selectedDutyFilters,
+  onDutyFilterToggle,
+  onDutyFilterClear,
   showEmployeePanel,
   showTemplatePanel,
   currentUser,
@@ -121,7 +128,7 @@ export function Header({
           <button
             onClick={onToggleExport}
             className="p-2 rounded-lg hover:bg-slate-700 transition-colors"
-            title="Als Excel exportieren"
+            title="Als PDF exportieren"
           >
             <Download className="w-5 h-5" />
           </button>
@@ -175,23 +182,57 @@ export function Header({
           <div className="text-sm font-semibold text-blue-300">
             {MONTHS[selectedMonth]} {selectedYear}
           </div>
-          <div className="relative w-full sm:w-72">
-            <Search className="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-            <input
-              value={employeeSearch}
-              onChange={e => onEmployeeSearchChange(e.target.value)}
-              placeholder="Mitarbeiter suchen..."
-              className="w-full h-8 rounded-lg bg-slate-700/80 border border-slate-600 pl-8 pr-8 text-xs text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            {employeeSearch && (
-              <button
-                onClick={() => onEmployeeSearchChange('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-white"
-                title="Suche leeren"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
+          <div className="flex flex-col gap-2 w-full sm:w-[560px]">
+            <div className="relative w-full">
+              <Search className="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <input
+                value={employeeSearch}
+                onChange={e => onEmployeeSearchChange(e.target.value)}
+                placeholder="Mitarbeiter suchen..."
+                className="w-full h-8 rounded-lg bg-slate-700/80 border border-slate-600 pl-8 pr-8 text-xs text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {employeeSearch && (
+                <button
+                  onClick={() => onEmployeeSearchChange('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-white"
+                  title="Suche leeren"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+            <details className="relative">
+              <summary className="list-none h-8 rounded-lg bg-slate-700/80 border border-slate-600 px-2 text-xs text-white flex items-center justify-between cursor-pointer">
+                <span>Dienste filtern</span>
+                <span className="text-[10px] text-slate-300">
+                  {selectedDutyFilters.length === 0 ? 'Alle' : `${selectedDutyFilters.length} gewählt`}
+                </span>
+              </summary>
+              <div className="absolute z-20 mt-1 w-full rounded-lg bg-slate-800 border border-slate-600 p-2 shadow-xl">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[11px] text-slate-300 font-semibold">Auswahl</span>
+                  <button
+                    onClick={onDutyFilterClear}
+                    className="text-[10px] text-slate-300 hover:text-white"
+                  >
+                    Zurücksetzen
+                  </button>
+                </div>
+                <div className="max-h-28 overflow-y-auto hide-scrollbar grid grid-cols-2 sm:grid-cols-3 gap-x-2 gap-y-1">
+                  {dutyTypes.map(dt => (
+                    <label key={dt.nr} className="flex items-center gap-1.5 text-[10px] text-slate-200 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedDutyFilters.includes(dt.nr)}
+                        onChange={() => onDutyFilterToggle(dt.nr)}
+                        className="rounded border-slate-400"
+                      />
+                      <span>{dt.nr} {dt.shortName}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </details>
           </div>
         </div>
       </div>

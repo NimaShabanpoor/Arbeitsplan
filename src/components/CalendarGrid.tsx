@@ -27,6 +27,7 @@ interface CalendarGridProps {
   scrollToDate: string | null;
   scrollToDateVersion: number;
   employeeSearchTerm: string;
+  selectedDutyFilters: number[];
 }
 
 function formatDate(day: number, month: number, year: number): string {
@@ -56,12 +57,14 @@ const DutyCell = memo(function DutyCell({
   dutyNr,
   isWeekend,
   isToday,
+  isVisible,
 }: {
   dutyNr: number | null;
   isWeekend: boolean;
   isToday: boolean;
+  isVisible: boolean;
 }) {
-  const dutyType = dutyNr !== null ? getDutyType(dutyNr) : null;
+  const dutyType = dutyNr !== null && isVisible ? getDutyType(dutyNr) : null;
 
   return (
     <div
@@ -93,6 +96,7 @@ export function CalendarGrid({
   scrollToDate,
   scrollToDateVersion,
   employeeSearchTerm,
+  selectedDutyFilters,
 }: CalendarGridProps) {
   const [selector, setSelector] = useState<SelectorState | null>(null);
   const [collapsed, setCollapsed] = useState(false);
@@ -111,9 +115,6 @@ export function CalendarGrid({
     const media = window.matchMedia('(max-width: 768px)');
     const applyViewport = (mobile: boolean) => {
       setIsMobile(mobile);
-      if (mobile) {
-        setCollapsed(true);
-      }
     };
 
     applyViewport(media.matches);
@@ -196,6 +197,16 @@ export function CalendarGrid({
     });
   }, [employees, employeeSearchTerm]);
 
+  const filteredEmployees = useMemo(() => {
+    if (selectedDutyFilters.length === 0) return activeEmployees;
+    return activeEmployees.filter(emp =>
+      days.some(day => {
+        const dutyNr = schedule[makeKey(emp.nr, day.dateStr)];
+        return typeof dutyNr === 'number' && selectedDutyFilters.includes(dutyNr);
+      })
+    );
+  }, [activeEmployees, days, schedule, selectedDutyFilters]);
+
   const handleCellClick = useCallback((
     e: React.MouseEvent,
     empNr: number,
@@ -231,7 +242,7 @@ export function CalendarGrid({
     <div className="flex-1 min-h-0 overflow-hidden relative flex">
       {/* Left panel: Employee info */}
       <div
-        className="shrink-0 flex flex-col border-r-2 border-slate-300 bg-white relative"
+        className="shrink-0 min-h-0 flex flex-col border-r-2 border-slate-300 bg-white relative"
         style={{ width: LEFT_PANEL_WIDTH }}
       >
         <button
@@ -272,13 +283,14 @@ export function CalendarGrid({
           ref={leftRef}
           className="flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar"
           onScroll={() => syncScroll('left')}
+          style={{ WebkitOverflowScrolling: 'touch' }}
         >
-          {activeEmployees.length === 0 && (
+          {filteredEmployees.length === 0 && (
             <div className="h-full flex items-center justify-center px-3 text-center text-xs text-slate-500">
-              Kein Mitarbeiter gefunden.
+              Keine passenden Mitarbeiter fuer den Filter.
             </div>
           )}
-          {activeEmployees.map((emp, rowIdx) => {
+          {filteredEmployees.map((emp, rowIdx) => {
             const isEven = rowIdx % 2 === 0;
             const bg = isEven ? 'bg-white' : 'bg-slate-50';
             const funktionClass = FUNKTION_COLORS[emp.funktion] || 'bg-slate-50 text-slate-600';
@@ -328,7 +340,7 @@ export function CalendarGrid({
       </div>
 
       {/* Right panel: Calendar grid */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
         {/* Calendar header (synced horizontal scroll) */}
         <div
           ref={headerRef}
@@ -365,13 +377,14 @@ export function CalendarGrid({
           ref={rightRef}
           className="flex-1 overflow-auto"
           onScroll={() => syncScroll('right')}
+          style={{ WebkitOverflowScrolling: 'touch' }}
         >
-          {activeEmployees.length === 0 && (
+          {filteredEmployees.length === 0 && (
             <div className="h-full flex items-center justify-center text-xs text-slate-500">
               Keine passenden Eintraege im Kalender.
             </div>
           )}
-          {activeEmployees.map((emp, rowIdx) => {
+          {filteredEmployees.map((emp, rowIdx) => {
             const isEven = rowIdx % 2 === 0;
             const bg = isEven ? 'bg-white' : 'bg-slate-50';
 
@@ -383,6 +396,8 @@ export function CalendarGrid({
               >
                 {days.map(day => {
                   const dutyNr = schedule[makeKey(emp.nr, day.dateStr)] ?? null;
+                  const isVisibleDuty =
+                    selectedDutyFilters.length === 0 || (dutyNr !== null && selectedDutyFilters.includes(dutyNr));
                   return (
                     <div
                       key={day.dateStr}
@@ -403,6 +418,7 @@ export function CalendarGrid({
                         dutyNr={dutyNr}
                         isWeekend={day.isWeekend}
                         isToday={day.isToday}
+                        isVisible={isVisibleDuty}
                       />
                     </div>
                   );

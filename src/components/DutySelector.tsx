@@ -6,17 +6,34 @@ interface DutySelectorProps {
   x: number;
   y: number;
   currentDuty: number | null;
+  currentNote: string;
   onSelect: (dutyNr: number | null) => void;
+  onSaveNote: (note: string) => void;
   onClose: () => void;
   employeeName: string;
   dateLabel: string;
 }
 
-export function DutySelector({ x, y, currentDuty, onSelect, onClose, employeeName, dateLabel }: DutySelectorProps) {
+export function DutySelector({
+  x,
+  y,
+  currentDuty,
+  currentNote,
+  onSelect,
+  onSaveNote,
+  onClose,
+  employeeName,
+  dateLabel,
+}: DutySelectorProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ left: x, top: y });
   const [ready, setReady] = useState(false);
+  const [note, setNote] = useState(currentNote);
   const mountTime = useRef(Date.now());
+
+  useEffect(() => {
+    setNote(currentNote);
+  }, [currentNote]);
 
   useLayoutEffect(() => {
     if (!ref.current) return;
@@ -109,6 +126,24 @@ export function DutySelector({ x, y, currentDuty, onSelect, onClose, employeeNam
             <span className="text-slate-700 truncate">{dt.name}</span>
           </button>
         ))}
+      </div>
+
+      <div className="border-t border-slate-200 p-2 bg-slate-50">
+        <div className="text-[11px] font-semibold text-slate-600 mb-1">Beschreibung für Mitarbeitende</div>
+        <textarea
+          value={note}
+          onChange={e => setNote(e.target.value)}
+          placeholder="Hinweis zum Dienst (z.B. Übergabe, Meeting, Raum...)"
+          className="w-full min-h-[70px] text-xs border border-slate-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <div className="mt-2 flex justify-end">
+          <button
+            onClick={() => onSaveNote(note)}
+            className="text-xs px-2.5 py-1.5 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-500"
+          >
+            Beschreibung speichern
+          </button>
+        </div>
       </div>
     </div>
   );

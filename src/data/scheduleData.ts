@@ -33,7 +33,7 @@ export function buildInitialSchedule(): ScheduleMap {
   ];
 
   const empData: { nr: number; values: (number | null)[] }[] = [
-    { nr: 100, values: [99, 30, 5, 41, 5, 40, null, 99, 5, 5, 5, 5, 5, null, 99, 5, 5, 5, 5, 5, null, 99, 5, 5, 41, 5, 40, null] },
+    { nr: 100, values: [99, 10, 5, 41, 5, 40, null, 99, 30, 30, 41, 16, 40, null, 99, 5, 5, 41, 5, 40, null, 99, 30, 30, 41, 30, 40, null] },
     { nr: 101, values: [99, 30, 5, 41, 10, 40, null, 99, 5, 5, 5, 5, 5, null, 99, 5, 5, 5, 5, 5, null, 99, 5, 5, 41, 5, 40, null] },
     { nr: 102, values: [99, 30, 5, 41, 10, 40, null, 99, 5, 5, 5, 5, 5, null, 99, 5, 5, 5, 5, 5, null, 99, 5, 5, 41, 5, 40, null] },
     { nr: 103, values: standardPattern },
@@ -74,7 +74,7 @@ export function buildInitialSchedule(): ScheduleMap {
 }
 
 const weekPatterns: Record<number, (number | null)[]> = {
-  100: [null, 5, 5, 41, 5, 40, null],
+  100: [null, 30, 30, 41, 30, 40, null],
   101: [null, 5, 5, 41, 5, 40, null],
   102: [null, 5, 5, 41, 5, 40, null],
   103: [null, 5, 5, 41, 5, 40, null],

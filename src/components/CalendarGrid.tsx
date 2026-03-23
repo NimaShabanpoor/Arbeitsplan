@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef, memo } from 'react';
-import { Employee, ScheduleMap, DutyNoteMap } from '../types';
+import { Employee, ScheduleMap } from '../types';
 import { getDutyType } from '../data/dutyTypes';
 import { makeKey } from '../data/scheduleData';
 import { DutySelector } from './DutySelector';
@@ -23,9 +23,7 @@ interface CalendarGridProps {
   selectedMonth: number;
   selectedYear: number;
   onSetDuty: (employeeNr: number, date: string, dutyNr: number | null) => void;
-  onSetDutyNote: (employeeNr: number, date: string, note: string) => void;
   canEdit: boolean;
-  dutyNotes: DutyNoteMap;
   scrollToDate: string | null;
   scrollToDateVersion: number;
   employeeSearchTerm: string;
@@ -60,13 +58,11 @@ const DutyCell = memo(function DutyCell({
   isWeekend,
   isToday,
   isVisible,
-  note,
 }: {
   dutyNr: number | null;
   isWeekend: boolean;
   isToday: boolean;
   isVisible: boolean;
-  note?: string;
 }) {
   const dutyType = dutyNr !== null && isVisible ? getDutyType(dutyNr) : null;
 
@@ -79,12 +75,11 @@ const DutyCell = memo(function DutyCell({
     >
       {dutyType ? (
         <div
-          className="w-full h-full relative flex items-center justify-center text-[10px] font-bold"
+          className="w-full h-full flex items-center justify-center text-[10px] font-bold"
           style={{ backgroundColor: dutyType.color, color: dutyType.textColor }}
-          title={`${dutyType.name} (${dutyType.startTime}–${dutyType.endTime})${note ? `\nHinweis: ${note}` : ''}`}
+          title={`${dutyType.name} (${dutyType.startTime}–${dutyType.endTime})`}
         >
           {dutyType.nr}
-          {note && <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-blue-700" />}
         </div>
       ) : null}
     </div>
@@ -97,9 +92,7 @@ export function CalendarGrid({
   selectedMonth,
   selectedYear,
   onSetDuty,
-  onSetDutyNote,
   canEdit,
-  dutyNotes,
   scrollToDate,
   scrollToDateVersion,
   employeeSearchTerm,
@@ -241,10 +234,6 @@ export function CalendarGrid({
   }, [selector, onSetDuty]);
 
   const closeSelector = useCallback(() => setSelector(null), []);
-  const handleSaveNote = useCallback((note: string) => {
-    if (!selector) return;
-    onSetDutyNote(selector.employeeNr, selector.dateStr, note);
-  }, [selector, onSetDutyNote]);
 
   const HEADER_HEIGHT = 36;
   const LEFT_PANEL_WIDTH = collapsed ? 52 : (isMobile ? 260 : 420);
@@ -407,7 +396,6 @@ export function CalendarGrid({
               >
                 {days.map(day => {
                   const dutyNr = schedule[makeKey(emp.nr, day.dateStr)] ?? null;
-                  const note = dutyNotes[makeKey(emp.nr, day.dateStr)] || '';
                   const isVisibleDuty =
                     selectedDutyFilters.length === 0 || (dutyNr !== null && selectedDutyFilters.includes(dutyNr));
                   return (
@@ -431,7 +419,6 @@ export function CalendarGrid({
                         isWeekend={day.isWeekend}
                         isToday={day.isToday}
                         isVisible={isVisibleDuty}
-                        note={note}
                       />
                     </div>
                   );
@@ -447,9 +434,7 @@ export function CalendarGrid({
           x={selector.x}
           y={selector.y}
           currentDuty={schedule[makeKey(selector.employeeNr, selector.dateStr)] ?? null}
-          currentNote={dutyNotes[makeKey(selector.employeeNr, selector.dateStr)] || ''}
           onSelect={handleDutySelect}
-          onSaveNote={handleSaveNote}
           onClose={closeSelector}
           employeeName={selector.employeeName}
           dateLabel={selector.dateLabel}

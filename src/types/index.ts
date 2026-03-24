@@ -31,7 +31,6 @@ export interface DutyType {
 }
 
 export type ScheduleMap = Record<string, number | null>;
-export type DutyNoteMap = Record<string, string>;
 
 export interface HolidayPeriod {
   name: string;

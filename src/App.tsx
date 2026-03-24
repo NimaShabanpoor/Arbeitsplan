@@ -7,7 +7,6 @@ import { TemplatePanel } from './components/TemplatePanel';
 import { ExportDialog } from './components/ExportDialog';
 import { LoginScreen } from './components/LoginScreen';
 import { AdditionalInfoPanel } from './components/AdditionalInfoPanel';
-import { PlanImportPanel } from './components/PlanImportPanel';
 import { useSchedule } from './hooks/useSchedule';
 import { authUsers } from './data/authUsers';
 import { AuthUser } from './types';
@@ -45,12 +44,10 @@ export default function App() {
   const {
     employees,
     schedule,
-    dutyNotes,
     selectedMonth,
     selectedYear,
     templates,
     setDuty,
-    setDutyNote,
     updateEmployee,
     addEmployee,
     removeEmployee,
@@ -60,7 +57,6 @@ export default function App() {
     saveTemplate,
     deleteTemplate,
     applyTemplate,
-    importPlans,
   } = useSchedule();
 
   const [showEmployeePanel, setShowEmployeePanel] = useState(false);
@@ -73,7 +69,6 @@ export default function App() {
   const [selectedDutyFilters, setSelectedDutyFilters] = useState<number[]>([]);
   const [showDutyFilterPanel, setShowDutyFilterPanel] = useState(false);
   const [showAdditionalInfoPanel, setShowAdditionalInfoPanel] = useState(false);
-  const [showPlanImportPanel, setShowPlanImportPanel] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileSection, setMobileSection] = useState<'calendar' | 'actions' | 'legend'>('calendar');
 
@@ -134,10 +129,6 @@ export default function App() {
       if (!isAdmin) return;
       setDuty(employeeNr, date, dutyNr);
     },
-    setDutyNote: (employeeNr: number, date: string, note: string) => {
-      if (!isAdmin) return;
-      setDutyNote(employeeNr, date, note);
-    },
     resetData: () => {
       if (!isAdmin) {
         alert('Nur Admins duerfen den Plan zuruecksetzen.');
@@ -174,14 +165,9 @@ export default function App() {
       if (!isAdmin) return;
       removeEmployee(nr);
     },
-    importPlans: (plans: Parameters<typeof importPlans>[0], startDate: string) => {
-      if (!isAdmin) return;
-      importPlans(plans, startDate);
-    },
   }), [
     isAdmin,
     setDuty,
-    setDutyNote,
     resetData,
     saveTemplate,
     deleteTemplate,
@@ -189,7 +175,6 @@ export default function App() {
     updateEmployee,
     addEmployee,
     removeEmployee,
-    importPlans,
   ]);
 
   if (!currentUser) {
@@ -230,14 +215,6 @@ export default function App() {
             Dienstfilter
           </div>
           <div className="flex items-center gap-2">
-            {isAdmin && (
-              <button
-                onClick={() => setShowPlanImportPanel(true)}
-                className="text-xs px-2.5 py-1 rounded-md border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-semibold"
-              >
-                Chef-Plan importieren
-              </button>
-            )}
             {isAdmin && (
               <button
                 onClick={() => setShowAdditionalInfoPanel(true)}
@@ -327,9 +304,7 @@ export default function App() {
               selectedMonth={selectedMonth}
               selectedYear={selectedYear}
               onSetDuty={protectedActions.setDuty}
-              onSetDutyNote={protectedActions.setDutyNote}
               canEdit={isAdmin}
-              dutyNotes={dutyNotes}
               scrollToDate={scrollToDate}
               scrollToDateVersion={scrollToDateVersion}
               employeeSearchTerm={employeeSearch}
@@ -348,9 +323,7 @@ export default function App() {
             selectedMonth={selectedMonth}
             selectedYear={selectedYear}
             onSetDuty={protectedActions.setDuty}
-            onSetDutyNote={protectedActions.setDutyNote}
             canEdit={isAdmin}
-            dutyNotes={dutyNotes}
             scrollToDate={scrollToDate}
             scrollToDateVersion={scrollToDateVersion}
             employeeSearchTerm={employeeSearch}
@@ -483,13 +456,6 @@ export default function App() {
           employees={employees}
           onUpdate={protectedActions.updateEmployee}
           onClose={() => setShowAdditionalInfoPanel(false)}
-        />
-      )}
-
-      {showPlanImportPanel && isAdmin && (
-        <PlanImportPanel
-          onApply={protectedActions.importPlans}
-          onClose={() => setShowPlanImportPanel(false)}
         />
       )}
 

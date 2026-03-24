@@ -1,13 +1,12 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Employee, ScheduleMap, WeekTemplate, DutyNoteMap } from '../types';
+import { Employee, ScheduleMap, WeekTemplate } from '../types';
 import { defaultEmployees } from '../data/employees';
 import { buildInitialSchedule, makeKey } from '../data/scheduleData';
-import { ImportedEmployeePlan } from '../utils/planImport';
+import { fetchAppData, saveAppData } from '../api/db';
 
 const STORAGE_KEY_SCHEDULE = 'benedict_schedule';
 const STORAGE_KEY_EMPLOYEES = 'benedict_employees';
 const STORAGE_KEY_TEMPLATES = 'benedict_templates';
-const STORAGE_KEY_DUTY_NOTES = 'benedict_duty_notes';
 
 function loadFromStorage<T>(key: string, fallback: T): T {
   try {
@@ -39,113 +38,62 @@ function mergeEmployeesWithDefaults(stored: Employee[], defaults: Employee[]): E
   });
 }
 
+function getInitialState() {
+  const employees = mergeEmployeesWithDefaults(
+    loadFromStorage(STORAGE_KEY_EMPLOYEES, defaultEmployees),
+    defaultEmployees
+  );
+  const schedule = loadFromStorage(STORAGE_KEY_SCHEDULE, buildInitialSchedule());
+  const templates = loadFromStorage(STORAGE_KEY_TEMPLATES, []);
+  return { employees, schedule, templates };
+}
+
 export function useSchedule() {
-  const [employees, setEmployees] = useState<Employee[]>(() => {
-    const loaded = loadFromStorage(STORAGE_KEY_EMPLOYEES, defaultEmployees);
-    return mergeEmployeesWithDefaults(loaded, defaultEmployees);
-  });
-
-  const [schedule, setSchedule] = useState<ScheduleMap>(() =>
-    loadFromStorage(STORAGE_KEY_SCHEDULE, buildInitialSchedule())
-  );
-  const [dutyNotes, setDutyNotes] = useState<DutyNoteMap>(() =>
-    loadFromStorage(STORAGE_KEY_DUTY_NOTES, {})
-  );
-
-  const [selectedMonth, setSelectedMonth] = useState(() => {
-    const now = new Date();
-    return now.getMonth();
-  });
-
-  const [selectedYear, setSelectedYear] = useState(() => {
-    const now = new Date();
-    return now.getFullYear();
-  });
-
-  const saveScheduleTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  useEffect(() => {
-    clearTimeout(saveScheduleTimer.current);
-    saveScheduleTimer.current = setTimeout(() => {
-      saveToStorage(STORAGE_KEY_SCHEDULE, schedule);
-    }, 300);
-    return () => clearTimeout(saveScheduleTimer.current);
-  }, [schedule]);
+  const [employees, setEmployees] = useState<Employee[]>(() => getInitialState().employees);
+  const [schedule, setSchedule] = useState<ScheduleMap>(() => getInitialState().schedule);
+  const [templates, setTemplates] = useState<WeekTemplate[]>(() => getInitialState().templates);
+  const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
+  const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const mounted = useRef(true);
 
   useEffect(() => {
-    saveToStorage(STORAGE_KEY_EMPLOYEES, employees);
-  }, [employees]);
+    mounted.current = true;
+    fetchAppData().then(data => {
+      if (!mounted.current || !data) return;
+      const hasData = data.employees.length > 0 || Object.keys(data.schedule).length > 0;
+      if (hasData) {
+        setEmployees(mergeEmployeesWithDefaults(data.employees, defaultEmployees));
+        setSchedule(data.schedule);
+        setTemplates(data.templates);
+      }
+    });
+    return () => { mounted.current = false; };
+  }, []);
+
+  const persist = useCallback(async (emp: Employee[], sched: ScheduleMap, tmpl: WeekTemplate[]) => {
+    const ok = await saveAppData({ employees: emp, schedule: sched, templates: tmpl });
+    if (!ok) {
+      saveToStorage(STORAGE_KEY_EMPLOYEES, emp);
+      saveToStorage(STORAGE_KEY_SCHEDULE, sched);
+      saveToStorage(STORAGE_KEY_TEMPLATES, tmpl);
+    }
+  }, []);
 
   useEffect(() => {
-    saveToStorage(STORAGE_KEY_DUTY_NOTES, dutyNotes);
-  }, [dutyNotes]);
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      persist(employees, schedule, templates);
+    }, 500);
+    return () => clearTimeout(saveTimer.current);
+  }, [employees, schedule, templates, persist]);
 
   const setDuty = useCallback((employeeNr: number, date: string, dutyNr: number | null) => {
     setSchedule(prev => {
       const key = makeKey(employeeNr, date);
       const next = { ...prev };
-      if (dutyNr === null) {
-        delete next[key];
-      } else {
-        next[key] = dutyNr;
-      }
-      return next;
-    });
-    if (dutyNr === null) {
-      setDutyNotes(prev => {
-        const key = makeKey(employeeNr, date);
-        if (!prev[key]) return prev;
-        const next = { ...prev };
-        delete next[key];
-        return next;
-      });
-    }
-  }, []);
-
-  const setDutyNote = useCallback((employeeNr: number, date: string, note: string) => {
-    const key = makeKey(employeeNr, date);
-    setDutyNotes(prev => {
-      const next = { ...prev };
-      const cleaned = note.trim();
-      if (!cleaned) {
-        delete next[key];
-      } else {
-        next[key] = cleaned;
-      }
-      return next;
-    });
-  }, []);
-
-  const importPlans = useCallback((plans: ImportedEmployeePlan[], startDate: string) => {
-    const start = new Date(startDate);
-    if (Number.isNaN(start.getTime())) return;
-    const yearEnd = new Date(start.getFullYear(), 11, 31);
-
-    setSchedule(prev => {
-      const next = { ...prev };
-
-      // Bereich für betroffene Mitarbeitende zuerst leeren
-      for (const plan of plans) {
-        for (let d = new Date(start); d <= yearEnd; d.setDate(d.getDate() + 1)) {
-          const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-          delete next[makeKey(plan.employeeNr, dateKey)];
-        }
-      }
-
-      // Importierte Werte setzen
-      for (const plan of plans) {
-        for (let i = 0; i < plan.values.length; i += 1) {
-          const d = new Date(start);
-          d.setDate(start.getDate() + i);
-          if (d > yearEnd) break;
-
-          const dutyNr = plan.values[i];
-          if (dutyNr === null) continue;
-
-          const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-          next[makeKey(plan.employeeNr, dateKey)] = dutyNr;
-        }
-      }
-
+      if (dutyNr === null) delete next[key];
+      else next[key] = dutyNr;
       return next;
     });
   }, []);
@@ -155,10 +103,7 @@ export function useSchedule() {
   }, []);
 
   const addEmployee = useCallback((emp: Employee) => {
-    setEmployees(prev => {
-      if (prev.some(e => e.nr === emp.nr)) return prev;
-      return [...prev, emp];
-    });
+    setEmployees(prev => (prev.some(e => e.nr === emp.nr) ? prev : [...prev, emp]));
   }, []);
 
   const removeEmployee = useCallback((nr: number) => {
@@ -184,14 +129,6 @@ export function useSchedule() {
     setSelectedMonth(month);
     setSelectedYear(year);
   }, []);
-
-  const [templates, setTemplates] = useState<WeekTemplate[]>(() =>
-    loadFromStorage(STORAGE_KEY_TEMPLATES, [])
-  );
-
-  useEffect(() => {
-    saveToStorage(STORAGE_KEY_TEMPLATES, templates);
-  }, [templates]);
 
   const saveTemplate = useCallback((tpl: WeekTemplate) => {
     setTemplates(prev => {
@@ -219,21 +156,15 @@ export function useSchedule() {
       const next = { ...prev };
       const start = new Date(startDate);
       const end = new Date(endDate);
-
       for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
         let dow = d.getDay();
         dow = dow === 0 ? 6 : dow - 1;
-
         const dutyNr = tpl.days[dow];
         const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
         for (const empNr of employeeNrs) {
           const key = makeKey(empNr, dateKey);
-          if (dutyNr === null) {
-            delete next[key];
-          } else {
-            next[key] = dutyNr;
-          }
+          if (dutyNr === null) delete next[key];
+          else next[key] = dutyNr;
         }
       }
       return next;
@@ -247,17 +178,16 @@ export function useSchedule() {
     setSchedule(buildInitialSchedule());
     setEmployees(defaultEmployees);
     setTemplates([]);
-  }, []);
+    persist(defaultEmployees, buildInitialSchedule(), []);
+  }, [persist]);
 
   return {
     employees,
     schedule,
-    dutyNotes,
     selectedMonth,
     selectedYear,
     templates,
     setDuty,
-    setDutyNote,
     updateEmployee,
     addEmployee,
     removeEmployee,
@@ -267,6 +197,5 @@ export function useSchedule() {
     saveTemplate,
     deleteTemplate,
     applyTemplate,
-    importPlans,
   };
 }

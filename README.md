@@ -2,21 +2,23 @@
 
 Dienstplan-App für Mitarbeitende. Gemeinsame Datenbank – Änderungen sind für alle sichtbar.
 
-## PostgreSQL (Vercel + Neon)
+## MySQL-Datenbank
 
-1. **Neon-Datenbank verbinden**  
-   - Im Vercel-Projekt: **Storage** → **Create Database** → **Neon (Postgres)**  
-   - Oder: [Vercel Marketplace](https://vercel.com/marketplace) → Neon → Integration hinzufügen
+1. **MySQL verbinden**  
+   - Beliebiger MySQL-Server (z. B. Railway, AWS RDS, DigitalOcean, eigener Server)  
+   - PlanetScale: nutzt ein anderes Protokoll – evtl. separat konfigurieren
 
 2. **Umgebungsvariablen**  
-   Nach dem Hinzufügen setzt Vercel automatisch z. B. `POSTGRES_URL` oder `DATABASE_URL`.
+   In Vercel oder `.env.local` setzen:
+   - `DATABASE_URL` oder `MYSQL_URL`  
+   - Format: `mysql://user:pass@host/datenbank`
 
 3. **Erster Aufruf**  
    Die Tabelle wird beim ersten API-Aufruf automatisch angelegt.
 
 4. **Lokal entwickeln**  
-   - Ohne DB: Die App nutzt weiterhin `localStorage` als Fallback.  
-   - Mit DB: `.env.local` mit `POSTGRES_URL` anlegen und `vercel dev` verwenden.
+   - Ohne DB: Die App nutzt `localStorage` als Fallback.  
+   - Mit DB: `.env.local` mit `DATABASE_URL` anlegen und `vercel dev` verwenden.
 
 ## Entwicklung
 

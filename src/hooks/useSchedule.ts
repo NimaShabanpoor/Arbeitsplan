@@ -3,6 +3,7 @@ import { Employee, ScheduleMap, WeekTemplate } from '../types';
 import { defaultEmployees } from '../data/employees';
 import { buildInitialSchedule, makeKey } from '../data/scheduleData';
 import { fetchAppData, saveAppData } from '../api/db';
+import { ImportedEmployeePlan } from '../utils/planImport';
 
 const STORAGE_KEY_SCHEDULE = 'benedict_schedule';
 const STORAGE_KEY_EMPLOYEES = 'benedict_employees';
@@ -171,6 +172,36 @@ export function useSchedule() {
     });
   }, []);
 
+  const importPlans = useCallback((plans: ImportedEmployeePlan[], startDate: string) => {
+    const start = new Date(startDate);
+    if (Number.isNaN(start.getTime())) return;
+    const yearEnd = new Date(start.getFullYear(), 11, 31);
+
+    setSchedule(prev => {
+      const next = { ...prev };
+
+      for (const plan of plans) {
+        for (let i = 0; i < plan.values.length; i += 1) {
+          const d = new Date(start);
+          d.setDate(start.getDate() + i);
+          if (d > yearEnd) break;
+
+          const dutyNr = plan.values[i];
+          const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+          const key = makeKey(plan.employeeNr, dateKey);
+
+          if (dutyNr === null) {
+            delete next[key];
+          } else {
+            next[key] = dutyNr;
+          }
+        }
+      }
+
+      return next;
+    });
+  }, []);
+
   const resetData = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY_SCHEDULE);
     localStorage.removeItem(STORAGE_KEY_EMPLOYEES);
@@ -197,5 +228,6 @@ export function useSchedule() {
     saveTemplate,
     deleteTemplate,
     applyTemplate,
+    importPlans,
   };
 }

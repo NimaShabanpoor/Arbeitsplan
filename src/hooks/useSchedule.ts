@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { Employee, ScheduleMap, WeekTemplate } from '../types';
 import { defaultEmployees } from '../data/employees';
 import { buildInitialSchedule, makeKey } from '../data/scheduleData';
-import { loadAppState, saveAppState } from '../api/db';
+import { loadAppState, saveAppState } from '../lib/appState';
 import { ImportedEmployeePlan } from '../utils/planImport';
 
 function mergeEmployeesWithDefaults(stored: Employee[], defaults: Employee[]): Employee[] {
@@ -29,18 +29,23 @@ export function useSchedule() {
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const mounted = useRef(true);
+  const [storageReady, setStorageReady] = useState(false);
 
   useEffect(() => {
     mounted.current = true;
-    loadAppState().then(data => {
-      if (!mounted.current || !data) return;
-      const hasData = data.employees.length > 0 || Object.keys(data.schedule).length > 0;
-      if (hasData) {
-        setEmployees(mergeEmployeesWithDefaults(data.employees, defaultEmployees));
-        setSchedule(data.schedule);
-        setTemplates(data.templates);
-      }
-    });
+    loadAppState()
+      .then(data => {
+        if (!mounted.current || !data) return;
+        const hasData = data.employees.length > 0 || Object.keys(data.schedule).length > 0;
+        if (hasData) {
+          setEmployees(mergeEmployeesWithDefaults(data.employees, defaultEmployees));
+          setSchedule(data.schedule);
+          setTemplates(data.templates);
+        }
+      })
+      .finally(() => {
+        if (mounted.current) setStorageReady(true);
+      });
     return () => { mounted.current = false; };
   }, []);
 
@@ -49,12 +54,13 @@ export function useSchedule() {
   }, []);
 
   useEffect(() => {
+    if (!storageReady) return;
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       persist(employees, schedule, templates);
     }, 500);
     return () => clearTimeout(saveTimer.current);
-  }, [employees, schedule, templates, persist]);
+  }, [storageReady, employees, schedule, templates, persist]);
 
   const setDuty = useCallback((employeeNr: number, date: string, dutyNr: number | null) => {
     setSchedule(prev => {

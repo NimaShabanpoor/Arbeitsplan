@@ -169,6 +169,7 @@ export default function App() {
       removeEmployee(nr);
     },
     importPlans: (plans: Parameters<typeof importPlans>[0], startDate: string) => {
+      if (!isAdmin) return;
       importPlans(plans, startDate);
     },
   }), [
@@ -222,12 +223,14 @@ export default function App() {
             Dienstfilter
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowPlanImportPanel(true)}
-              className="text-xs px-2.5 py-1 rounded-md border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-semibold"
-            >
-              Excel einfuegen
-            </button>
+            {isAdmin && (
+              <button
+                onClick={() => setShowPlanImportPanel(true)}
+                className="text-xs px-2.5 py-1 rounded-md border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-semibold"
+              >
+                Excel einfuegen
+              </button>
+            )}
             {isAdmin && (
               <button
                 onClick={() => setShowAdditionalInfoPanel(true)}
@@ -403,12 +406,14 @@ export default function App() {
               >
                 Export
               </button>
-              <button
-                onClick={() => setShowPlanImportPanel(true)}
-                className="text-xs px-3 py-2 rounded-md bg-cyan-600 text-white font-semibold"
-              >
-                Excel einfuegen
-              </button>
+              {isAdmin && (
+                <button
+                  onClick={() => setShowPlanImportPanel(true)}
+                  className="text-xs px-3 py-2 rounded-md bg-cyan-600 text-white font-semibold"
+                >
+                  Excel einfuegen
+                </button>
+              )}
               {isAdmin && (
                 <button
                   onClick={() => setShowTemplatePanel(true)}
@@ -478,7 +483,7 @@ export default function App() {
         />
       )}
 
-      {showPlanImportPanel && (
+      {showPlanImportPanel && isAdmin && (
         <PlanImportPanel
           onApply={protectedActions.importPlans}
           onClose={() => setShowPlanImportPanel(false)}

@@ -2,26 +2,8 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { Employee, ScheduleMap, WeekTemplate } from '../types';
 import { defaultEmployees } from '../data/employees';
 import { buildInitialSchedule, makeKey } from '../data/scheduleData';
-import { fetchAppData, saveAppData } from '../api/db';
+import { loadAppState, saveAppState } from '../api/db';
 import { ImportedEmployeePlan } from '../utils/planImport';
-
-const STORAGE_KEY_SCHEDULE = 'benedict_schedule';
-const STORAGE_KEY_EMPLOYEES = 'benedict_employees';
-const STORAGE_KEY_TEMPLATES = 'benedict_templates';
-
-function loadFromStorage<T>(key: string, fallback: T): T {
-  try {
-    const stored = localStorage.getItem(key);
-    if (stored) return JSON.parse(stored);
-  } catch { /* ignore */ }
-  return fallback;
-}
-
-function saveToStorage<T>(key: string, data: T) {
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch { /* ignore */ }
-}
 
 function mergeEmployeesWithDefaults(stored: Employee[], defaults: Employee[]): Employee[] {
   const byNr = new Map(defaults.map(emp => [emp.nr, emp]));
@@ -39,20 +21,10 @@ function mergeEmployeesWithDefaults(stored: Employee[], defaults: Employee[]): E
   });
 }
 
-function getInitialState() {
-  const employees = mergeEmployeesWithDefaults(
-    loadFromStorage(STORAGE_KEY_EMPLOYEES, defaultEmployees),
-    defaultEmployees
-  );
-  const schedule = loadFromStorage(STORAGE_KEY_SCHEDULE, buildInitialSchedule());
-  const templates = loadFromStorage(STORAGE_KEY_TEMPLATES, []);
-  return { employees, schedule, templates };
-}
-
 export function useSchedule() {
-  const [employees, setEmployees] = useState<Employee[]>(() => getInitialState().employees);
-  const [schedule, setSchedule] = useState<ScheduleMap>(() => getInitialState().schedule);
-  const [templates, setTemplates] = useState<WeekTemplate[]>(() => getInitialState().templates);
+  const [employees, setEmployees] = useState<Employee[]>(() => defaultEmployees);
+  const [schedule, setSchedule] = useState<ScheduleMap>(() => buildInitialSchedule());
+  const [templates, setTemplates] = useState<WeekTemplate[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -60,7 +32,7 @@ export function useSchedule() {
 
   useEffect(() => {
     mounted.current = true;
-    fetchAppData().then(data => {
+    loadAppState().then(data => {
       if (!mounted.current || !data) return;
       const hasData = data.employees.length > 0 || Object.keys(data.schedule).length > 0;
       if (hasData) {
@@ -73,12 +45,7 @@ export function useSchedule() {
   }, []);
 
   const persist = useCallback(async (emp: Employee[], sched: ScheduleMap, tmpl: WeekTemplate[]) => {
-    const ok = await saveAppData({ employees: emp, schedule: sched, templates: tmpl });
-    if (!ok) {
-      saveToStorage(STORAGE_KEY_EMPLOYEES, emp);
-      saveToStorage(STORAGE_KEY_SCHEDULE, sched);
-      saveToStorage(STORAGE_KEY_TEMPLATES, tmpl);
-    }
+    await saveAppState({ employees: emp, schedule: sched, templates: tmpl });
   }, []);
 
   useEffect(() => {
@@ -203,9 +170,6 @@ export function useSchedule() {
   }, []);
 
   const resetData = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY_SCHEDULE);
-    localStorage.removeItem(STORAGE_KEY_EMPLOYEES);
-    localStorage.removeItem(STORAGE_KEY_TEMPLATES);
     setSchedule(buildInitialSchedule());
     setEmployees(defaultEmployees);
     setTemplates([]);

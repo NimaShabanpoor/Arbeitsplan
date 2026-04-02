@@ -8,7 +8,7 @@ export interface AppData {
   templates: WeekTemplate[];
 }
 
-export async function fetchAppData(): Promise<AppData | null> {
+export async function loadAppState(): Promise<AppData | null> {
   try {
     const res = await fetch(`${API_BASE}/api/data`);
     if (!res.ok) return null;
@@ -23,7 +23,7 @@ export async function fetchAppData(): Promise<AppData | null> {
   }
 }
 
-export async function saveAppData(data: AppData): Promise<boolean> {
+export async function saveAppState(data: AppData): Promise<boolean> {
   try {
     const res = await fetch(`${API_BASE}/api/data`, {
       method: 'POST',

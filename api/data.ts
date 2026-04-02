@@ -34,7 +34,7 @@ export default async function handler(req: Request): Promise<Response> {
   try {
     if (req.method === 'GET') {
       const { data, error } = await supabase
-        .from('app_state')
+        .from('Arbeitsplan')
         .select('employees, schedule, templates')
         .eq('id', 'default')
         .single();
@@ -56,7 +56,7 @@ export default async function handler(req: Request): Promise<Response> {
       const templates = Array.isArray(body.templates) ? body.templates : [];
 
       const { error } = await supabase
-        .from('app_state')
+        .from('Arbeitsplan')
         .upsert(
           {
             id: 'default',

@@ -15,7 +15,7 @@ export default async function handler(_req: Request): Promise<Response> {
       { auth: { persistSession: false, autoRefreshToken: false } }
     );
 
-    const { error } = await supabase.from('app_state').upsert(
+    const { error } = await supabase.from('Arbeitsplan').upsert(
       {
         id: 'default',
         employees: [],

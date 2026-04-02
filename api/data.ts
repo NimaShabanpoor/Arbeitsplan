@@ -1,30 +1,20 @@
-import mysql from 'mysql2/promise';
+import { createClient } from '@supabase/supabase-js';
 
-function getConnection() {
-  const url = process.env.DATABASE_URL || process.env.MYSQL_URL;
-  if (!url) throw new Error('DATABASE_URL oder MYSQL_URL fehlt');
-  return mysql.createConnection(url);
-}
-
-async function ensureTable(conn: Awaited<ReturnType<typeof mysql.createConnection>>) {
-  await conn.execute(`
-    CREATE TABLE IF NOT EXISTS app_state (
-      id VARCHAR(50) PRIMARY KEY DEFAULT 'default',
-      employees JSON NOT NULL,
-      schedule JSON NOT NULL,
-      templates JSON NOT NULL,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    )
-  `);
-  await conn.execute(
-    `INSERT IGNORE INTO app_state (id, employees, schedule, templates) VALUES ('default', '[]', '{}', '[]')`
-  );
+function getSupabase() {
+  const url = process.env.SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !serviceRoleKey) {
+    throw new Error('SUPABASE_URL oder SUPABASE_SERVICE_ROLE_KEY fehlt');
+  }
+  return createClient(url, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 }
 
 export default async function handler(req: Request): Promise<Response> {
-  if (!process.env.DATABASE_URL && !process.env.MYSQL_URL) {
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return new Response(
-      JSON.stringify({ error: 'DATABASE_URL oder MYSQL_URL fehlt' }),
+      JSON.stringify({ error: 'SUPABASE_URL oder SUPABASE_SERVICE_ROLE_KEY fehlt' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
@@ -39,30 +29,20 @@ export default async function handler(req: Request): Promise<Response> {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
 
-  let conn: Awaited<ReturnType<typeof mysql.createConnection>> | null = null;
-
-  try {
-    conn = await getConnection();
-    await ensureTable(conn);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return new Response(JSON.stringify({ error: `Init: ${msg}` }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
+  const supabase = getSupabase();
 
   try {
     if (req.method === 'GET') {
-      const [rows] = await conn!.execute(
-        'SELECT employees, schedule, templates FROM app_state WHERE id = ? LIMIT 1',
-        ['default']
-      );
-      const row = (rows as { employees: unknown; schedule: unknown; templates: unknown }[])[0];
-      const employees = Array.isArray(row?.employees) ? row.employees : (typeof row?.employees === 'string' ? JSON.parse(row.employees || '[]') : []);
-      const schedule = row?.schedule && typeof row.schedule === 'object' && !Array.isArray(row.schedule) ? row.schedule : (typeof row?.schedule === 'string' ? JSON.parse(row.schedule || '{}') : {});
-      const templates = Array.isArray(row?.templates) ? row.templates : (typeof row?.templates === 'string' ? JSON.parse(row.templates || '[]') : []);
-      await conn!.end();
+      const { data, error } = await supabase
+        .from('app_state')
+        .select('employees, schedule, templates')
+        .eq('id', 'default')
+        .single();
+      if (error && error.code !== 'PGRST116') throw error;
+      const row = data || { employees: [], schedule: {}, templates: [] };
+      const employees = Array.isArray(row.employees) ? row.employees : [];
+      const schedule = row.schedule && typeof row.schedule === 'object' && !Array.isArray(row.schedule) ? row.schedule : {};
+      const templates = Array.isArray(row.templates) ? row.templates : [];
       return new Response(JSON.stringify({ employees, schedule, templates }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -75,24 +55,30 @@ export default async function handler(req: Request): Promise<Response> {
       const schedule = body.schedule && typeof body.schedule === 'object' && !Array.isArray(body.schedule) ? body.schedule : {};
       const templates = Array.isArray(body.templates) ? body.templates : [];
 
-      await conn!.execute(
-        `UPDATE app_state SET employees = ?, schedule = ?, templates = ?, updated_at = NOW() WHERE id = ?`,
-        [JSON.stringify(employees), JSON.stringify(schedule), JSON.stringify(templates), 'default']
-      );
-      await conn!.end();
+      const { error } = await supabase
+        .from('app_state')
+        .upsert(
+          {
+            id: 'default',
+            employees,
+            schedule,
+            templates,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'id' }
+        );
+      if (error) throw error;
       return new Response(JSON.stringify({ ok: true }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    await conn!.end();
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {
-    if (conn) await conn.end().catch(() => {});
     const msg = err instanceof Error ? err.message : String(err);
     return new Response(JSON.stringify({ error: msg }), {
       status: 500,

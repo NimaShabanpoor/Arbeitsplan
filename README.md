@@ -2,23 +2,22 @@
 
 Dienstplan-App für Mitarbeitende. Gemeinsame Datenbank – Änderungen sind für alle sichtbar.
 
-## MySQL-Datenbank
+## Supabase-Datenbank
 
-1. **MySQL verbinden**  
-   - Beliebiger MySQL-Server (z. B. Railway, AWS RDS, DigitalOcean, eigener Server)  
-   - PlanetScale: nutzt ein anderes Protokoll – evtl. separat konfigurieren
+1. **Supabase-Projekt erstellen**  
+   - [Supabase](https://supabase.com) Projekt anlegen
+   - SQL-Editor oeffnen und Tabelle `app_state` anlegen
 
-2. **Umgebungsvariablen**  
-   In Vercel oder `.env.local` setzen:
-   - `DATABASE_URL` oder `MYSQL_URL`  
-   - Format: `mysql://user:pass@host/datenbank`
+2. **Umgebungsvariablen in Vercel setzen**  
+   - `SUPABASE_URL`  
+   - `SUPABASE_SERVICE_ROLE_KEY`
 
 3. **Erster Aufruf**  
-   Die Tabelle wird beim ersten API-Aufruf automatisch angelegt.
+   - Endpoint `/api/init-db` kann den Default-Datensatz anlegen (`id = default`)
 
 4. **Lokal entwickeln**  
    - Ohne DB: Die App nutzt `localStorage` als Fallback.  
-   - Mit DB: `.env.local` mit `DATABASE_URL` anlegen und `vercel dev` verwenden.
+   - Mit DB: `.env.local` mit `SUPABASE_URL` und `SUPABASE_SERVICE_ROLE_KEY` setzen und `vercel dev` verwenden.
 
 ## Entwicklung
 

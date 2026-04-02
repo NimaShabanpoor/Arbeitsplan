@@ -1,37 +1,37 @@
-import mysql from 'mysql2/promise';
+import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(_req: Request): Promise<Response> {
-  if (!process.env.DATABASE_URL && !process.env.MYSQL_URL) {
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return new Response(
-      JSON.stringify({ error: 'DATABASE_URL oder MYSQL_URL fehlt' }),
+      JSON.stringify({ error: 'SUPABASE_URL oder SUPABASE_SERVICE_ROLE_KEY fehlt' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
 
-  let conn: Awaited<ReturnType<typeof mysql.createConnection>> | null = null;
   try {
-    const url = process.env.DATABASE_URL || process.env.MYSQL_URL;
-    if (!url) throw new Error('DATABASE_URL oder MYSQL_URL fehlt');
-    conn = await mysql.createConnection(url);
-    await conn.execute(`
-      CREATE TABLE IF NOT EXISTS app_state (
-        id VARCHAR(50) PRIMARY KEY DEFAULT 'default',
-        employees JSON NOT NULL,
-        schedule JSON NOT NULL,
-        templates JSON NOT NULL,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      )
-    `);
-    await conn.execute(
-      `INSERT IGNORE INTO app_state (id, employees, schedule, templates) VALUES ('default', '[]', '{}', '[]')`
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      { auth: { persistSession: false, autoRefreshToken: false } }
     );
-    await conn.end();
+
+    const { error } = await supabase.from('app_state').upsert(
+      {
+        id: 'default',
+        employees: [],
+        schedule: {},
+        templates: [],
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'id' }
+    );
+    if (error) throw error;
+
     return new Response(JSON.stringify({ ok: true, message: 'Tabelle erstellt' }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (err) {
-    if (conn) await conn.end().catch(() => {});
     const msg = err instanceof Error ? err.message : String(err);
     return new Response(JSON.stringify({ error: msg }), {
       status: 500,
